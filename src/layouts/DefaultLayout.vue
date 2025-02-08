@@ -14,6 +14,8 @@ import {
   CaretBottom,
   SwitchButton
 } from '@element-plus/icons-vue'
+import { ElMessage } from 'element-plus'
+import { supabase } from '@/lib/supabase'
 
 const router = useRouter()
 const isCollapse = ref(false)
@@ -32,9 +34,19 @@ const handleCommand = (command: string) => {
   }
 }
 
-const handleLogout = () => {
-  // TODO: Implement logout logic
-  router.push('/login')
+const handleLogout = async () => {
+  try {
+    const { error } = await supabase.auth.signOut()
+    if (error) {
+      ElMessage.error('退出失败，请重试')
+      return
+    }
+    ElMessage.success('已成功退出')
+    router.push('/login')
+  } catch (error) {
+    console.error('Logout error:', error)
+    ElMessage.error('退出失败，请重试')
+  }
 }
 </script>
 
