@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, computed } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import {
   HomeFilled,
   Calendar,
@@ -18,7 +18,25 @@ import { ElMessage } from 'element-plus'
 import { supabase } from '@/lib/supabase'
 
 const router = useRouter()
+const route = useRoute()
 const isCollapse = ref(false)
+
+const currentMenuTitle = computed(() => {
+  switch (route.path) {
+    case '/':
+      return '首页'
+    case '/study-plan':
+      return '学习计划'
+    case '/study-notes':
+      return '学习笔记'
+    case '/study-statistics':
+      return '学习统计'
+    case '/system-settings':
+      return '系统设置'
+    default:
+      return '当前页面'
+  }
+})
 
 const handleCommand = (command: string) => {
   switch (command) {
@@ -54,38 +72,40 @@ const handleLogout = async () => {
   <el-container class="layout-container">
     <el-aside :width="isCollapse ? '64px' : '200px'" class="aside-container">
       <div class="logo-container">
-        <img src="@/assets/logo.svg" alt="Logo" class="logo">
+        <img src="@/assets/images/logo.svg" alt="Logo" class="logo">
         <span class="logo-text" v-show="!isCollapse">学习管理系统</span>
       </div>
       
+
       <el-scrollbar>
         <el-menu
           :collapse="isCollapse"
           default-active="1"
           class="sidebar-menu"
           :collapse-transition="false"
+          router
         >
           <el-menu-item index="1" route="/">
             <el-icon><HomeFilled /></el-icon>
             <template #title>首页</template>
           </el-menu-item>
           
-          <el-menu-item index="2">
+          <el-menu-item index="2" route="/study-plan">
             <el-icon><Calendar /></el-icon>
             <template #title>学习计划</template>
           </el-menu-item>
           
-          <el-menu-item index="3">
+          <el-menu-item index="3" route="/study-notes">
             <el-icon><Document /></el-icon>
             <template #title>学习笔记</template>
           </el-menu-item>
           
-          <el-menu-item index="4">
+          <el-menu-item index="4" route="/study-statistics">
             <el-icon><DataAnalysis /></el-icon>
             <template #title>学习统计</template>
           </el-menu-item>
           
-          <el-menu-item index="5">
+          <el-menu-item index="5" route="/system-settings">
             <el-icon><Setting /></el-icon>
             <template #title>系统设置</template>
           </el-menu-item>
@@ -105,7 +125,7 @@ const handleLogout = async () => {
           
           <el-breadcrumb separator="/">
             <el-breadcrumb-item :to="{ path: '/' }">首页</el-breadcrumb-item>
-            <el-breadcrumb-item>当前页面</el-breadcrumb-item>
+            <el-breadcrumb-item>{{ currentMenuTitle }}</el-breadcrumb-item>
           </el-breadcrumb>
         </div>
         

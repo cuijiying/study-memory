@@ -77,11 +77,12 @@ const goToRegister = () => {
     <div class="login-content">
       <div class="login-header">
         <div class="logo-container">
-          <img src="@/assets/logo.svg" alt="Logo" class="logo">
+          <img src="@/assets/images/logo.svg" alt="Logo" class="logo">
           <div class="logo-glow"></div>
         </div>
         <h2>学习管理系统</h2>
         <p class="subtitle">记录每一步学习的进步</p>
+
       </div>
       
       <el-card class="login-card">

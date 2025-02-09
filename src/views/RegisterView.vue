@@ -91,10 +91,11 @@ const goToLogin = () => {
   <div class="register-container">
     <div class="register-content">
       <div class="register-header">
-        <img src="@/assets/logo.svg" alt="Logo" class="logo">
+        <img src="@/assets/images/logo.svg" alt="Logo" class="logo">
         <h2>创建新账号</h2>
         <p class="subtitle">开始您的学习之旅</p>
       </div>
+
       
       <el-card class="register-card">
         <el-form

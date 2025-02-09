@@ -1,7 +1,7 @@
 /// <reference types="vite/client" />
 /// <reference types="element-plus/global" />
 
-declare module 'element-plus'
+// declare module 'element-plus'
 declare module '@element-plus/icons-vue' {
   export const HomeFilled: any
   export const Calendar: any
