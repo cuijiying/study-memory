@@ -1,6 +1,6 @@
 # study-memory
 
-https://study-memory.vercel.app/login
+https://study-memory.vercel.app
 
 ## Recommended IDE Setup
 
