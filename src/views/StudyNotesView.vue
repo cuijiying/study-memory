@@ -1,0 +1,287 @@
+<script setup lang="ts">
+import { ref, onMounted } from 'vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import { supabase } from '@/lib/supabase'
+import type { StudyRecord } from '@/types'
+
+const notes = ref<StudyRecord[]>([])
+const loading = ref(false)
+const dialogVisible = ref(false)
+const isEdit = ref(false)
+
+const formData = ref<StudyRecord>({
+  id: 0,
+  category: '',
+  title: '',
+  description: '',
+  link: '',
+  created_at: '',
+  updated_at: ''
+})
+
+const rules = {
+  category: [{ required: true, message: '请选择分类', trigger: 'blur' }],
+  title: [{ required: true, message: '请输入标题', trigger: 'blur' }],
+  description: [{ required: true, message: '请输入描述', trigger: 'blur' }],
+  link: [{ required: true, message: '请输入链接', trigger: 'blur' }]
+}
+
+const categories = [
+  '编程',
+  '语言',
+  '数学',
+  '其他'
+]
+
+// 获取笔记列表
+const fetchNotes = async () => {
+  loading.value = true
+  try {
+    const { data, error } = await supabase
+      .from('study_records')
+      .select('*')
+      .order('created_at', { ascending: false })
+    
+    if (error) throw error
+    notes.value = data
+  } catch (error) {
+    ElMessage.error('获取笔记列表失败')
+    console.error(error)
+  } finally {
+    loading.value = false
+  }
+}
+
+// 打开新增/编辑对话框
+const openDialog = (note?: StudyRecord) => {
+  if (note) {
+    isEdit.value = true
+    formData.value = { ...note }
+  } else {
+    isEdit.value = false
+    formData.value = {
+      id: 0,
+      category: '',
+      title: '',
+      description: '',
+      link: '',
+      created_at: '',
+      updated_at: ''
+    }
+  }
+  dialogVisible.value = true
+}
+
+// 保存笔记
+const handleSave = async () => {
+  try {
+    if (isEdit.value) {
+      const { error } = await supabase
+        .from('study_records')
+        .update({
+          category: formData.value.category,
+          title: formData.value.title,
+          description: formData.value.description,
+          link: formData.value.link
+        })
+        .eq('id', formData.value.id)
+      
+      if (error) throw error
+      ElMessage.success('更新成功')
+    } else {
+      // COMMENT ON COLUMN study_records.review1_time IS '第一次复习时间（3小时后）';
+      // COMMENT ON COLUMN study_records.review2_time IS '第二次复习时间（24小时后）';
+      // COMMENT ON COLUMN study_records.review3_time IS '第三次复习时间（3天后）';
+      // COMMENT ON COLUMN study_records.review4_time IS '第四次复习时间（7天后）';
+      // COMMENT ON COLUMN study_records.review5_time IS '第五次复习时间（15天后）';
+      const review1Time = new Date(new Date().getTime() + 3 * 60 * 60 * 1000)
+      const review2Time = new Date(new Date().getTime() + 24 * 60 * 60 * 1000)
+      const review3Time = new Date(new Date().getTime() + 3 * 24 * 60 * 60 * 1000)
+      const review4Time = new Date(new Date().getTime() + 7 * 24 * 60 * 60 * 1000)
+      const review5Time = new Date(new Date().getTime() + 15 * 24 * 60 * 60 * 1000)
+      const { error } = await supabase
+        .from('study_records')
+
+        .insert({
+          category: formData.value.category,
+          title: formData.value.title,
+          description: formData.value.description,
+          link: formData.value.link,
+          review1_time: review1Time.toISOString(),
+          review2_time: review2Time.toISOString(),
+          review3_time: review3Time.toISOString(),
+          review4_time: review4Time.toISOString(),
+          review5_time: review5Time.toISOString()
+
+        })
+      
+
+      if (error) throw error
+      ElMessage.success('添加成功')
+    }
+    dialogVisible.value = false
+    fetchNotes()
+  } catch (error) {
+    ElMessage.error(isEdit.value ? '更新失败' : '添加失败')
+    console.error(error)
+  }
+}
+
+// 删除笔记
+const handleDelete = async (id: number) => {
+  try {
+    await ElMessageBox.confirm('确定要删除这条笔记吗？', '提示', {
+      type: 'warning'
+    })
+    
+    const { error } = await supabase
+      .from('study_records')
+      .delete()
+      .eq('id', id)
+    
+    if (error) throw error
+    ElMessage.success('删除成功')
+    fetchNotes()
+  } catch (error) {
+    if (error !== 'cancel') {
+      ElMessage.error('删除失败')
+      console.error(error)
+    }
+  }
+}
+
+onMounted(() => {
+  fetchNotes()
+})
+</script>
+
+<template>
+  <div class="study-notes">
+    <div class="header">
+      <!-- <h2>学习笔记</h2> -->
+      <el-button type="primary" @click="openDialog()">
+        <el-icon><Plus /></el-icon>新增笔记
+      </el-button>
+    </div>
+
+    <el-table
+      v-loading="loading"
+      :data="notes"
+      style="width: 100%"
+      border
+    >
+      <el-table-column prop="category" label="分类" width="100" />
+      <el-table-column prop="title" label="标题" />
+      <el-table-column prop="description" label="描述" show-overflow-tooltip />
+      <el-table-column prop="link" label="链接" show-overflow-tooltip>
+        <template #default="{ row }">
+          <el-link type="primary" :href="row.link" target="_blank">{{ row.link }}</el-link>
+        </template>
+      </el-table-column>
+      <el-table-column prop="review1_time" label="第一次复习时间" width="180">
+        <template #default="{ row }">
+          {{ new Date(row.review1_time).toLocaleString() }}
+        </template>
+      </el-table-column>
+      <el-table-column prop="review2_time" label="第二次复习时间" width="180">
+        <template #default="{ row }">
+          {{ new Date(row.review2_time).toLocaleString() }}
+        </template>
+      </el-table-column>
+      <el-table-column prop="review3_time" label="第三次复习时间" width="180">
+        <template #default="{ row }">
+          {{ new Date(row.review3_time).toLocaleString() }}
+        </template>
+      </el-table-column>
+      <el-table-column prop="review4_time" label="第四次复习时间" width="180">
+        <template #default="{ row }">
+          {{ new Date(row.review4_time).toLocaleString() }}
+        </template>
+      </el-table-column>
+      <el-table-column prop="review5_time" label="第五次复习时间" width="180">
+        <template #default="{ row }">
+          {{ new Date(row.review5_time).toLocaleString() }}
+        </template>
+      </el-table-column>
+      <el-table-column prop="created_at" label="创建时间" width="180">
+        <template #default="{ row }">
+          {{ new Date(row.created_at).toLocaleString() }}
+        </template>
+      </el-table-column>
+      <el-table-column label="操作" width="150" fixed="right">
+        <template #default="{ row }">
+          <el-button-group>
+            <el-button type="primary" @click="openDialog(row)" link>
+              <el-icon><Edit /></el-icon>
+            </el-button>
+            <el-button type="danger" @click="handleDelete(row.id)" link>
+              <el-icon><Delete /></el-icon>
+            </el-button>
+          </el-button-group>
+        </template>
+      </el-table-column>
+    </el-table>
+
+    <el-dialog
+      v-model="dialogVisible"
+      :title="isEdit ? '编辑笔记' : '新增笔记'"
+      width="500px"
+    >
+      <el-form
+        ref="formRef"
+        :model="formData"
+        :rules="rules"
+        label-width="80px"
+      >
+        <el-form-item label="分类" prop="category">
+          <el-select v-model="formData.category" placeholder="请选择分类" style="width: 100%">
+            <el-option
+              v-for="item in categories"
+              :key="item"
+              :label="item"
+              :value="item"
+            />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="标题" prop="title">
+          <el-input v-model="formData.title" />
+        </el-form-item>
+        <el-form-item label="描述" prop="description">
+          <el-input
+            v-model="formData.description"
+            type="textarea"
+            :rows="4"
+          />
+        </el-form-item>
+        <el-form-item label="链接" prop="link">
+          <el-input v-model="formData.link" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="dialogVisible = false">取消</el-button>
+        <el-button type="primary" @click="handleSave">确定</el-button>
+      </template>
+    </el-dialog>
+  </div>
+</template>
+
+<style lang="scss" scoped>
+.study-notes {
+  padding: 20px;
+  background: #fff;
+  border-radius: 8px;
+  
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    
+    h2 {
+      margin: 0;
+      font-size: 24px;
+      font-weight: 600;
+    }
+  }
+}
+</style> 
