@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import {
   HomeFilled,
@@ -7,6 +7,7 @@ import {
   Document,
   DataAnalysis,
   Setting,
+
   Bell,
   Fold,
   Expand,
@@ -66,21 +67,59 @@ const handleLogout = async () => {
     ElMessage.error('退出失败，请重试')
   }
 }
-</script>
 
+// 根据路由获取当前路由的index
+const activeIndex = computed(() => {
+  // 获取当前路由的index
+  const path = route.path.split('/').pop()
+  switch (path) {
+    case '':
+      return '1'
+    case 'study-plan':
+      return '2'
+    case 'study-notes':
+      return '3'
+    case 'study-statistics':
+      return '4'
+    case 'system-settings':
+      return '5'
+    default:
+      return '1'
+  } 
+})
+
+// 获取用户名
+const user = ref({
+  username: 'guest'
+})
+
+
+// 获取用户名
+const getUsername = async () => {
+  const { data, error } = await supabase.auth.getUser()
+  if (error) {
+    console.error('Error fetching user:', error)
+  }
+  user.value.username = data.user?.email || 'guest'
+}
+
+onMounted(() => {
+  getUsername()
+})
+
+</script>
 <template>
+
   <el-container class="layout-container">
     <el-aside :width="isCollapse ? '64px' : '200px'" class="aside-container">
       <div class="logo-container">
         <img src="@/assets/images/logo.svg" alt="Logo" class="logo">
         <span class="logo-text" v-show="!isCollapse">学习管理系统</span>
       </div>
-      
-
       <el-scrollbar>
         <el-menu
           :collapse="isCollapse"
-          default-active="1"
+          :default-active="activeIndex"
           class="sidebar-menu"
           :collapse-transition="false"
           router
@@ -140,9 +179,11 @@ const handleLogout = async () => {
             <el-dropdown @command="handleCommand">
               <div class="user-info">
                 <el-avatar :size="32" src="https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png" />
-                <span class="username">Admin</span>
+                <!-- 获取用户名 -->
+                <span class="username">{{ user.username }}</span>
                 <el-icon><CaretBottom /></el-icon>
               </div>
+
               <template #dropdown>
                 <el-dropdown-menu>
                   <el-dropdown-item command="profile">

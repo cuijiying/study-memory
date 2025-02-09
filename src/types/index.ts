@@ -11,4 +11,16 @@ export interface StudyRecord {
   review3_time?: string
   review4_time?: string
   review5_time?: string
+}
+
+export interface StudyPlan {
+  id: number
+  title: string
+  description: string
+  start_time: string
+  end_time: string
+  status: 'pending' | 'in_progress' | 'completed'
+  priority: 'high' | 'medium' | 'low'
+  created_at: string
+  updated_at: string
 } 

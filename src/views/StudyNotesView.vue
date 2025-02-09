@@ -8,6 +8,9 @@ const notes = ref<StudyRecord[]>([])
 const loading = ref(false)
 const dialogVisible = ref(false)
 const isEdit = ref(false)
+const currentPage = ref(1)
+const pageSize = ref(10)
+const total = ref(0)
 
 const formData = ref<StudyRecord>({
   id: 0,
@@ -37,10 +40,28 @@ const categories = [
 const fetchNotes = async () => {
   loading.value = true
   try {
+    const userId = (await supabase.auth.getUser()).data.user?.id
+    if (!userId) {
+      ElMessage.error('用户未登录')
+      return
+    }
+
+    // Get total count
+    const countResult = await supabase
+      .from('study_records')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', userId)
+    
+    if (countResult.error) throw countResult.error
+    total.value = countResult.count || 0
+
+    // Get paginated data
     const { data, error } = await supabase
       .from('study_records')
       .select('*')
+      .eq('user_id', userId)
       .order('created_at', { ascending: false })
+      .range((currentPage.value - 1) * pageSize.value, currentPage.value * pageSize.value - 1)
     
     if (error) throw error
     notes.value = data
@@ -72,9 +93,26 @@ const openDialog = (note?: StudyRecord) => {
   dialogVisible.value = true
 }
 
+// Add pagination handlers
+const handleSizeChange = (val: number) => {
+  pageSize.value = val
+  fetchNotes()
+}
+
+const handleCurrentChange = (val: number) => {
+  currentPage.value = val
+  fetchNotes()
+}
+
 // 保存笔记
 const handleSave = async () => {
   try {
+    const userId = (await supabase.auth.getUser()).data.user?.id
+    if (!userId) {
+      ElMessage.error('用户未登录')
+      return
+    }
+
     if (isEdit.value) {
       const { error } = await supabase
         .from('study_records')
@@ -85,41 +123,37 @@ const handleSave = async () => {
           link: formData.value.link
         })
         .eq('id', formData.value.id)
+        .eq('user_id', userId)
       
       if (error) throw error
       ElMessage.success('更新成功')
     } else {
-      // COMMENT ON COLUMN study_records.review1_time IS '第一次复习时间（3小时后）';
-      // COMMENT ON COLUMN study_records.review2_time IS '第二次复习时间（24小时后）';
-      // COMMENT ON COLUMN study_records.review3_time IS '第三次复习时间（3天后）';
-      // COMMENT ON COLUMN study_records.review4_time IS '第四次复习时间（7天后）';
-      // COMMENT ON COLUMN study_records.review5_time IS '第五次复习时间（15天后）';
       const review1Time = new Date(new Date().getTime() + 3 * 60 * 60 * 1000)
       const review2Time = new Date(new Date().getTime() + 24 * 60 * 60 * 1000)
       const review3Time = new Date(new Date().getTime() + 3 * 24 * 60 * 60 * 1000)
       const review4Time = new Date(new Date().getTime() + 7 * 24 * 60 * 60 * 1000)
       const review5Time = new Date(new Date().getTime() + 15 * 24 * 60 * 60 * 1000)
+
       const { error } = await supabase
         .from('study_records')
-
         .insert({
           category: formData.value.category,
           title: formData.value.title,
           description: formData.value.description,
           link: formData.value.link,
+          user_id: userId,
           review1_time: review1Time.toISOString(),
           review2_time: review2Time.toISOString(),
           review3_time: review3Time.toISOString(),
           review4_time: review4Time.toISOString(),
           review5_time: review5Time.toISOString()
-
         })
-      
 
       if (error) throw error
       ElMessage.success('添加成功')
     }
     dialogVisible.value = false
+    currentPage.value = 1
     fetchNotes()
   } catch (error) {
     ElMessage.error(isEdit.value ? '更新失败' : '添加失败')
@@ -141,6 +175,9 @@ const handleDelete = async (id: number) => {
     
     if (error) throw error
     ElMessage.success('删除成功')
+    if (notes.value.length === 1 && currentPage.value > 1) {
+      currentPage.value-- // Go to previous page if current page becomes empty
+    }
     fetchNotes()
   } catch (error) {
     if (error !== 'cancel') {
@@ -169,46 +206,54 @@ onMounted(() => {
       :data="notes"
       style="width: 100%"
       border
+      stripe
     >
-      <el-table-column prop="category" label="分类" width="100" />
-      <el-table-column prop="title" label="标题" />
-      <el-table-column prop="description" label="描述" show-overflow-tooltip />
-      <el-table-column prop="link" label="链接" show-overflow-tooltip>
+      <el-table-column prop="category" label="分类" width="100" align="center" />
+      <el-table-column prop="title" label="标题" align="center" />
+
+
+      <el-table-column prop="description" label="描述" show-overflow-tooltip align="center" />
+      <el-table-column prop="link" label="链接" show-overflow-tooltip align="center">
         <template #default="{ row }">
+
           <el-link type="primary" :href="row.link" target="_blank">{{ row.link }}</el-link>
         </template>
       </el-table-column>
-      <el-table-column prop="review1_time" label="第一次复习时间" width="180">
+      <el-table-column prop="review1_time" label="第一次复习时间" width="180" align="center">
         <template #default="{ row }">
           {{ new Date(row.review1_time).toLocaleString() }}
+
         </template>
       </el-table-column>
-      <el-table-column prop="review2_time" label="第二次复习时间" width="180">
+      <el-table-column prop="review2_time" label="第二次复习时间" width="180" align="center">
         <template #default="{ row }">
           {{ new Date(row.review2_time).toLocaleString() }}
+
         </template>
       </el-table-column>
-      <el-table-column prop="review3_time" label="第三次复习时间" width="180">
+      <el-table-column prop="review3_time" label="第三次复习时间" width="180" align="center">
         <template #default="{ row }">
           {{ new Date(row.review3_time).toLocaleString() }}
+
         </template>
       </el-table-column>
-      <el-table-column prop="review4_time" label="第四次复习时间" width="180">
+      <el-table-column prop="review4_time" label="第四次复习时间" width="180" align="center">
         <template #default="{ row }">
           {{ new Date(row.review4_time).toLocaleString() }}
+
         </template>
       </el-table-column>
-      <el-table-column prop="review5_time" label="第五次复习时间" width="180">
+      <el-table-column prop="review5_time" label="第五次复习时间" width="180" align="center">
         <template #default="{ row }">
           {{ new Date(row.review5_time).toLocaleString() }}
         </template>
       </el-table-column>
-      <el-table-column prop="created_at" label="创建时间" width="180">
+      <el-table-column prop="created_at" label="创建时间" width="180" align="center">
         <template #default="{ row }">
           {{ new Date(row.created_at).toLocaleString() }}
         </template>
       </el-table-column>
-      <el-table-column label="操作" width="150" fixed="right">
+      <el-table-column label="操作" width="150" fixed="right" align="center">
         <template #default="{ row }">
           <el-button-group>
             <el-button type="primary" @click="openDialog(row)" link>
@@ -221,6 +266,18 @@ onMounted(() => {
         </template>
       </el-table-column>
     </el-table>
+
+    <div class="pagination-container">
+      <el-pagination
+        v-model:current-page="currentPage"
+        v-model:page-size="pageSize"
+        :total="total"
+        :page-sizes="[10, 20, 50]"
+        layout="total, sizes, prev, pager, next, jumper"
+        @size-change="handleSizeChange"
+        @current-change="handleCurrentChange"
+      />
+    </div>
 
     <el-dialog
       v-model="dialogVisible"
@@ -283,5 +340,11 @@ onMounted(() => {
       font-weight: 600;
     }
   }
+}
+
+.pagination-container {
+  margin-top: 20px;
+  display: flex;
+  justify-content: flex-end;
 }
 </style> 
