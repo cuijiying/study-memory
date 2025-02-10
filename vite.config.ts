@@ -14,6 +14,10 @@ export default defineConfig({
     vueDevTools(),
     AutoImport({
       resolvers: [ElementPlusResolver()],
+      // 自动导入 Vue 相关函数，如：ref, reactive, computed 等
+      imports: ['vue', 'vue-router', 'pinia'],
+      // 生成自动导入的 TypeScript 声明文件
+      dts: 'src/auto-imports.d.ts',
     }),
     Components({
       resolvers: [ElementPlusResolver()],

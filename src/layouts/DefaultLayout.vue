@@ -1,13 +1,10 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
-import { useRouter, useRoute } from 'vue-router'
 import {
   HomeFilled,
   Calendar,
   Document,
   DataAnalysis,
   Setting,
-
   Bell,
   Fold,
   Expand,
@@ -255,12 +252,10 @@ onMounted(() => {
       :deep(.el-menu-item) {
         &.is-active {
           background-color: var(--el-color-primary);
-          color: white;
         }
         
         &:hover {
-          background-color: var(--el-color-primary);
-          color: white;
+          background-color: #99afe2;
         }
       }
     }

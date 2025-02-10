@@ -1,9 +1,6 @@
 <script setup lang="ts">
-import { ref, reactive } from 'vue'
-import { useRouter } from 'vue-router'
-import type { FormInstance, FormRules } from 'element-plus'
+import type { FormInstance, FormRules, ElMessage } from 'element-plus'
 import { User, Lock, Message } from '@element-plus/icons-vue'
-import { ElMessage } from 'element-plus'
 import { supabase } from '../lib/supabase'
 
 const router = useRouter()
