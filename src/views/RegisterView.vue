@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import type { FormInstance, FormRules, ElMessage } from 'element-plus'
-import { User, Lock, Message } from '@element-plus/icons-vue'
+import { User, Lock} from '@element-plus/icons-vue'
 import { supabase } from '../lib/supabase'
 
 const router = useRouter()
@@ -41,9 +40,9 @@ const registerRules = reactive<FormRules>({
   ]
 })
 
-const registerFormRef = ref<FormInstance>()
+const registerFormRef = ref()
 
-const handleRegister = async (formEl: FormInstance | undefined) => {
+const handleRegister = async (formEl: any) => {
   if (!formEl) return
   loading.value = true
   
