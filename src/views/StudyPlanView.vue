@@ -1,7 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
 import type { StudyPlan } from '@/types'
-import { ElMessage, ElMessageBox } from 'element-plus'
 import { supabase } from '@/lib/supabase'
 
 const loading = ref(false)

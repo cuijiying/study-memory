@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
 import { supabase } from '@/lib/supabase'
 import type { StudyRecord } from '@/types'
 
