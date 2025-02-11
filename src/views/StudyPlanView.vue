@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { StudyPlan } from '@/types'
-import { ElMessage, ElMessageBox } from 'element-plus'
+
 import { supabase } from '@/lib/supabase'
 import { useLearningTypeStore } from '@/stores/learningType'
 
@@ -47,11 +47,12 @@ const fetchStudyPlans = async () => {
 
     // Get paginated data with learning type
     const { data, error } = await supabase
-      .from('study_plan')
+      .from('study_plan_types') // 视图
       .select(`
         *
       `)
       .eq('user_id', userId)
+      // .eq('study_plan.learning_type_id', 'learning_types.id') // 手动指定连接条件
       .order('created_at', { ascending: false })
       .range((currentPage.value - 1) * pageSize.value, currentPage.value * pageSize.value - 1)
     if (error) throw error
@@ -97,7 +98,8 @@ const handleCreate = async () => {
 const handleEdit = async () => {
   if (!selectedPlan.value) return
   try {
-    const { id, created_at, updated_at, learning_type, ...updates } = selectedPlan.value
+    // 从selectedPlan中排除name
+    const { name, id, created_at, updated_at, learning_type, ...updates } = selectedPlan.value
     const { error } = await supabase
       .from('study_plan')
       .update(updates)

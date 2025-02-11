@@ -62,13 +62,14 @@ const fetchNotes = async () => {
 
     // Get paginated data with learning type
     const { data, error } = await supabase
-      .from('study_records')
+      .from('study_records_types') // 视图
       .select(`
-        *
+        * 
       `)
       .eq('user_id', userId)
       .order('created_at', { ascending: false })
       .range((currentPage.value - 1) * pageSize.value, currentPage.value * pageSize.value - 1)
+      
     
     if (error) throw error
     notes.value = data
