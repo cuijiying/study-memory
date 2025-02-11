@@ -224,7 +224,7 @@ onMounted(async () => {
       <el-table-column prop="title" label="标题" align="center" />
       <el-table-column label="学习类型" align="center" width="120">
         <template #default="{ row }">
-          {{ row.learning_type?.name }}
+          {{ row?.name }}
         </template>
       </el-table-column>
       <el-table-column prop="description" label="描述" show-overflow-tooltip align="center" />
