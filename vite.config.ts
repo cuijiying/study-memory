@@ -17,7 +17,7 @@ export default defineConfig({
       imports: ['vue', 'vue-router', 'pinia'],
       // 生成自动导入的 TypeScript 声明文件
       dts: 'src/auto-imports.d.ts',
-      resolvers: [ElementPlusResolver()], // 自动导入 Element Plus 组件
+      resolvers: [ElementPlusResolver()],
     }),
     Components({
       resolvers: [ElementPlusResolver()],

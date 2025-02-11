@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import type { StudyPlan } from '@/types'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { supabase } from '@/lib/supabase'
+import { useLearningTypeStore } from '@/stores/learningType'
 
 const loading = ref(false)
 const showCreateDialog = ref(false)
@@ -11,13 +13,18 @@ const currentPage = ref(1)
 const pageSize = ref(10)
 const total = ref(0)
 
+// 引入学习类型 store
+const learningTypeStore = useLearningTypeStore()
+const { learningTypes } = storeToRefs(learningTypeStore)
+
 const newPlan = ref({
   title: '',
   description: '',
   start_time: '',
   end_time: '',
   status: 'pending' as const,
-  priority: 'medium' as const
+  priority: 'medium' as const,
+  learning_type_id: undefined as number | undefined
 })
 
 const fetchStudyPlans = async () => {
@@ -38,10 +45,12 @@ const fetchStudyPlans = async () => {
     if (countResult.error) throw countResult.error
     total.value = countResult.count || 0
 
-    // Get paginated data
+    // Get paginated data with learning type
     const { data, error } = await supabase
       .from('study_plan')
-      .select('*')
+      .select(`
+        *
+      `)
       .eq('user_id', userId)
       .order('created_at', { ascending: false })
       .range((currentPage.value - 1) * pageSize.value, currentPage.value * pageSize.value - 1)
@@ -55,7 +64,8 @@ const fetchStudyPlans = async () => {
   }
 }
 
-onMounted(() => {
+onMounted(async () => {
+  await learningTypeStore.fetchLearningTypes()
   fetchStudyPlans()
 })
 
@@ -87,13 +97,12 @@ const handleCreate = async () => {
 const handleEdit = async () => {
   if (!selectedPlan.value) return
   try {
-    const { id, created_at, updated_at, ...updates } = selectedPlan.value
+    const { id, created_at, updated_at, learning_type, ...updates } = selectedPlan.value
     const { error } = await supabase
       .from('study_plan')
       .update(updates)
       .eq('id', id)
     
-
     if (error) throw error
     
     showEditDialog.value = false
@@ -131,7 +140,6 @@ const handleDelete = async (id: number) => {
   })
 }
 
-
 const resetForm = () => {
   newPlan.value = {
     title: '',
@@ -139,7 +147,8 @@ const resetForm = () => {
     start_time: '',
     end_time: '',
     status: 'pending',
-    priority: 'medium'
+    priority: 'medium',
+    learning_type_id: undefined
   }
 }
 
@@ -189,17 +198,20 @@ const handleCurrentChange = (val: number) => {
 
     <el-table v-loading="loading" :data="studyPlans" style="width: 100%" border stripe>
       <el-table-column prop="title" label="标题" align="center" />
+      <el-table-column label="学习类型" align="center" width="120">
+        <template #default="{ row }">
+          {{ row.learning_type?.name }}
+        </template>
+      </el-table-column>
       <el-table-column prop="description" label="描述" show-overflow-tooltip align="center" />
       <el-table-column prop="start_time" label="开始时间" align="center">
         <template #default="{ row }">
           {{ new Date(row.start_time).toLocaleString() }}
-
         </template>
       </el-table-column>
       <el-table-column prop="end_time" label="结束时间" align="center">
         <template #default="{ row }">
           {{ new Date(row.end_time).toLocaleString() }}
-
         </template>
       </el-table-column>
       <el-table-column prop="priority" label="优先级" align="center">
@@ -227,7 +239,6 @@ const handleCurrentChange = (val: number) => {
             </el-button>
           </el-button-group>
         </template>
-
       </el-table-column>
     </el-table>
 
@@ -241,85 +252,76 @@ const handleCurrentChange = (val: number) => {
         @size-change="handleSizeChange"
         @current-change="handleCurrentChange"
       />
-
     </div>
 
     <!-- Create Dialog -->
     <el-dialog 
       v-model="showCreateDialog" 
       title="新增学习计划"
-      width="600px"
-      destroy-on-close
+      width="500px"
     >
-      <el-form :model="newPlan" label-width="100px" label-position="right">
-        <el-row :gutter="20">
-          <el-col :span="24">
-            <el-form-item label="标题" required>
-              <el-input v-model="newPlan.title" placeholder="请输入标题" />
-            </el-form-item>
-          </el-col>
-        </el-row>
-        
-        <el-row :gutter="20">
-          <el-col :span="24">
-            <el-form-item label="描述" required>
-              <el-input 
-                v-model="newPlan.description" 
-                type="textarea" 
-                :rows="4"
-                placeholder="请输入详细描述"
-              />
-            </el-form-item>
-          </el-col>
-        </el-row>
+      <el-form :model="newPlan" label-width="100px">
+        <el-form-item label="标题" required>
+          <el-input v-model="newPlan.title" placeholder="请输入标题" />
+        </el-form-item>
 
-        <el-row :gutter="20">
-          <el-col :span="12">
-            <el-form-item label="开始时间" required>
-              <el-date-picker 
-                v-model="newPlan.start_time" 
-                type="datetime" 
-                style="width: 100%"
-                placeholder="选择开始时间"
-              />
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="结束时间" required>
-              <el-date-picker 
-                v-model="newPlan.end_time" 
-                type="datetime" 
-                style="width: 100%"
-                placeholder="选择结束时间"
-              />
-            </el-form-item>
-          </el-col>
-        </el-row>
+        <el-form-item label="学习类型" required>
+          <el-select v-model="newPlan.learning_type_id" placeholder="请选择学习类型">
+            <el-option
+              v-for="type in learningTypes"
+              :key="type.id"
+              :label="type.name"
+              :value="type.id"
+            />
+          </el-select>
+        </el-form-item>
 
-        <el-row :gutter="20">
-          <el-col :span="12">
-            <el-form-item label="优先级" required>
-              <el-select v-model="newPlan.priority" style="width: 100%">
-                <el-option label="高" value="high" />
-                <el-option label="中" value="medium" />
-                <el-option label="低" value="low" />
-              </el-select>
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="状态" required>
-              <el-select v-model="newPlan.status" style="width: 100%">
-                <el-option label="待完成" value="pending" />
-                <el-option label="进行中" value="in_progress" />
-                <el-option label="已完成" value="completed" />
-              </el-select>
-            </el-form-item>
-          </el-col>
-        </el-row>
+        <el-form-item label="描述">
+          <el-input
+            v-model="newPlan.description"
+            type="textarea"
+            placeholder="请输入描述"
+          />
+        </el-form-item>
+
+        <el-form-item label="开始时间" required>
+          <el-date-picker
+            v-model="newPlan.start_time"
+            type="datetime"
+            placeholder="选择开始时间"
+          />
+        </el-form-item>
+
+        <el-form-item label="结束时间" required>
+          <el-date-picker
+            v-model="newPlan.end_time"
+            type="datetime"
+            placeholder="选择结束时间"
+          />
+        </el-form-item>
+
+        <el-form-item label="优先级">
+          <el-select v-model="newPlan.priority">
+            <el-option label="高" value="high" />
+            <el-option label="中" value="medium" />
+            <el-option label="低" value="low" />
+          </el-select>
+        </el-form-item>
+
+        <el-form-item label="状态">
+          <el-select v-model="newPlan.status">
+            <el-option label="待完成" value="pending" />
+            <el-option label="进行中" value="in_progress" />
+            <el-option label="已完成" value="completed" />
+          </el-select>
+        </el-form-item>
       </el-form>
+
       <template #footer>
-        <el-button @click="showCreateDialog = false">取消</el-button>
-        <el-button type="primary" @click="handleCreate">新增</el-button>
+        <span class="dialog-footer">
+          <el-button @click="showCreateDialog = false">取消</el-button>
+          <el-button type="primary" @click="handleCreate">确定</el-button>
+        </span>
       </template>
     </el-dialog>
 
@@ -327,78 +329,70 @@ const handleCurrentChange = (val: number) => {
     <el-dialog 
       v-model="showEditDialog" 
       title="编辑学习计划"
-      width="600px"
-      destroy-on-close
+      width="500px"
     >
-      <el-form v-if="selectedPlan" :model="selectedPlan" label-width="100px" label-position="right">
-        <el-row :gutter="20">
-          <el-col :span="24">
-            <el-form-item label="标题" required>
-              <el-input v-model="selectedPlan.title" placeholder="请输入标题" />
-            </el-form-item>
-          </el-col>
-        </el-row>
-        
-        <el-row :gutter="20">
-          <el-col :span="24">
-            <el-form-item label="描述" required>
-              <el-input 
-                v-model="selectedPlan.description" 
-                type="textarea" 
-                :rows="4"
-                placeholder="请输入详细描述"
-              />
-            </el-form-item>
-          </el-col>
-        </el-row>
+      <el-form v-if="selectedPlan" :model="selectedPlan" label-width="100px">
+        <el-form-item label="标题" required>
+          <el-input v-model="selectedPlan.title" placeholder="请输入标题" />
+        </el-form-item>
 
-        <el-row :gutter="20">
-          <el-col :span="12">
-            <el-form-item label="开始时间" required>
-              <el-date-picker 
-                v-model="selectedPlan.start_time" 
-                type="datetime" 
-                style="width: 100%"
-                placeholder="选择开始时间"
-              />
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="结束时间" required>
-              <el-date-picker 
-                v-model="selectedPlan.end_time" 
-                type="datetime" 
-                style="width: 100%"
-                placeholder="选择结束时间"
-              />
-            </el-form-item>
-          </el-col>
-        </el-row>
+        <el-form-item label="学习类型" required>
+          <el-select v-model="selectedPlan.learning_type_id" placeholder="请选择学习类型">
+            <el-option
+              v-for="type in learningTypes"
+              :key="type.id"
+              :label="type.name"
+              :value="type.id"
+            />
+          </el-select>
+        </el-form-item>
 
-        <el-row :gutter="20">
-          <el-col :span="12">
-            <el-form-item label="优先级" required>
-              <el-select v-model="selectedPlan.priority" style="width: 100%">
-                <el-option label="高" value="high" />
-                <el-option label="中" value="medium" />
-                <el-option label="低" value="low" />
-              </el-select>
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="状态" required>
-              <el-select v-model="selectedPlan.status" style="width: 100%">
-                <el-option label="待完成" value="pending" />
-                <el-option label="进行中" value="in_progress" />
-                <el-option label="已完成" value="completed" />
-              </el-select>
-            </el-form-item>
-          </el-col>
-        </el-row>
+        <el-form-item label="描述">
+          <el-input
+            v-model="selectedPlan.description"
+            type="textarea"
+            placeholder="请输入描述"
+          />
+        </el-form-item>
+
+        <el-form-item label="开始时间" required>
+          <el-date-picker
+            v-model="selectedPlan.start_time"
+            type="datetime"
+            placeholder="选择开始时间"
+          />
+        </el-form-item>
+
+        <el-form-item label="结束时间" required>
+          <el-date-picker
+            v-model="selectedPlan.end_time"
+            type="datetime"
+            placeholder="选择结束时间"
+          />
+        </el-form-item>
+
+        <el-form-item label="优先级">
+          <el-select v-model="selectedPlan.priority">
+            <el-option label="高" value="high" />
+            <el-option label="中" value="medium" />
+            <el-option label="低" value="low" />
+          </el-select>
+        </el-form-item>
+
+        <el-form-item label="状态">
+          <el-select v-model="selectedPlan.status">
+            <el-option label="待完成" value="pending" />
+            <el-option label="进行中" value="in_progress" />
+            <el-option label="已完成" value="completed" />
+          </el-select>
+        </el-form-item>
       </el-form>
+
       <template #footer>
-        <el-button @click="showEditDialog = false">取消</el-button>
-        <el-button type="primary" @click="handleEdit">保存</el-button>
+        <span class="dialog-footer">
+          <el-button @click="showEditDialog = false">取消</el-button>
+          <el-button type="primary" @click="handleEdit">确定</el-button>
+        </span>
       </template>
     </el-dialog>
   </div>
@@ -433,5 +427,4 @@ const handleCurrentChange = (val: number) => {
 :deep(.el-form-item__label) {
   font-weight: 500;
 }
-
 </style>

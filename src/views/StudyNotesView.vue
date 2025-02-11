@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { supabase } from '@/lib/supabase'
 import type { StudyRecord } from '@/types'
+import { useLearningTypeStore } from '@/stores/learningType'
 
 const notes = ref<StudyRecord[]>([])
 const loading = ref(false)
@@ -10,12 +11,17 @@ const currentPage = ref(1)
 const pageSize = ref(10)
 const total = ref(0)
 
+// 引入学习类型 store
+const learningTypeStore = useLearningTypeStore()
+const { learningTypes } = storeToRefs(learningTypeStore)
+
 const formData = ref<StudyRecord>({
   id: 0,
   category: '',
   title: '',
   description: '',
   link: '',
+  learning_type_id: 0,
   created_at: '',
   updated_at: ''
 })
@@ -24,7 +30,8 @@ const rules = {
   category: [{ required: true, message: '请选择分类', trigger: 'blur' }],
   title: [{ required: true, message: '请输入标题', trigger: 'blur' }],
   description: [{ required: true, message: '请输入描述', trigger: 'blur' }],
-  link: [{ required: true, message: '请输入链接', trigger: 'blur' }]
+  link: [{ required: true, message: '请输入链接', trigger: 'blur' }],
+  learning_type_id: [{ required: true, message: '请选择学习类型', trigger: 'change' }]
 }
 
 const categories = [
@@ -53,10 +60,12 @@ const fetchNotes = async () => {
     if (countResult.error) throw countResult.error
     total.value = countResult.count || 0
 
-    // Get paginated data
+    // Get paginated data with learning type
     const { data, error } = await supabase
       .from('study_records')
-      .select('*')
+      .select(`
+        *
+      `)
       .eq('user_id', userId)
       .order('created_at', { ascending: false })
       .range((currentPage.value - 1) * pageSize.value, currentPage.value * pageSize.value - 1)
@@ -84,6 +93,7 @@ const openDialog = (note?: StudyRecord) => {
       title: '',
       description: '',
       link: '',
+      learning_type_id: 0,
       created_at: '',
       updated_at: ''
     }
@@ -118,7 +128,8 @@ const handleSave = async () => {
           category: formData.value.category,
           title: formData.value.title,
           description: formData.value.description,
-          link: formData.value.link
+          link: formData.value.link,
+          learning_type_id: formData.value.learning_type_id
         })
         .eq('id', formData.value.id)
         .eq('user_id', userId)
@@ -139,6 +150,7 @@ const handleSave = async () => {
           title: formData.value.title,
           description: formData.value.description,
           link: formData.value.link,
+          learning_type_id: formData.value.learning_type_id,
           user_id: userId,
           review1_time: review1Time.toISOString(),
           review2_time: review2Time.toISOString(),
@@ -185,7 +197,8 @@ const handleDelete = async (id: number) => {
   }
 }
 
-onMounted(() => {
+onMounted(async () => {
+  await learningTypeStore.fetchLearningTypes()
   fetchNotes()
 })
 </script>
@@ -208,37 +221,35 @@ onMounted(() => {
     >
       <el-table-column prop="category" label="分类" width="100" align="center" />
       <el-table-column prop="title" label="标题" align="center" />
-
-
+      <el-table-column label="学习类型" align="center" width="120">
+        <template #default="{ row }">
+          {{ row.learning_type?.name }}
+        </template>
+      </el-table-column>
       <el-table-column prop="description" label="描述" show-overflow-tooltip align="center" />
       <el-table-column prop="link" label="链接" show-overflow-tooltip align="center">
         <template #default="{ row }">
-
           <el-link type="primary" :href="row.link" target="_blank">{{ row.link }}</el-link>
         </template>
       </el-table-column>
       <el-table-column prop="review1_time" label="第一次复习时间" width="180" align="center">
         <template #default="{ row }">
           {{ new Date(row.review1_time).toLocaleString() }}
-
         </template>
       </el-table-column>
       <el-table-column prop="review2_time" label="第二次复习时间" width="180" align="center">
         <template #default="{ row }">
           {{ new Date(row.review2_time).toLocaleString() }}
-
         </template>
       </el-table-column>
       <el-table-column prop="review3_time" label="第三次复习时间" width="180" align="center">
         <template #default="{ row }">
           {{ new Date(row.review3_time).toLocaleString() }}
-
         </template>
       </el-table-column>
       <el-table-column prop="review4_time" label="第四次复习时间" width="180" align="center">
         <template #default="{ row }">
           {{ new Date(row.review4_time).toLocaleString() }}
-
         </template>
       </el-table-column>
       <el-table-column prop="review5_time" label="第五次复习时间" width="180" align="center">
@@ -286,10 +297,10 @@ onMounted(() => {
         ref="formRef"
         :model="formData"
         :rules="rules"
-        label-width="80px"
+        label-width="100px"
       >
         <el-form-item label="分类" prop="category">
-          <el-select v-model="formData.category" placeholder="请选择分类" style="width: 100%">
+          <el-select v-model="formData.category" placeholder="请选择分类">
             <el-option
               v-for="item in categories"
               :key="item"
@@ -298,23 +309,40 @@ onMounted(() => {
             />
           </el-select>
         </el-form-item>
-        <el-form-item label="标题" prop="title">
-          <el-input v-model="formData.title" />
+
+        <el-form-item label="学习类型" prop="learning_type_id">
+          <el-select v-model="formData.learning_type_id" placeholder="请选择学习类型">
+            <el-option
+              v-for="type in learningTypes"
+              :key="type.id"
+              :label="type.name"
+              :value="type.id"
+            />
+          </el-select>
         </el-form-item>
+
+        <el-form-item label="标题" prop="title">
+          <el-input v-model="formData.title" placeholder="请输入标题" />
+        </el-form-item>
+
         <el-form-item label="描述" prop="description">
           <el-input
             v-model="formData.description"
             type="textarea"
-            :rows="4"
+            placeholder="请输入描述"
           />
         </el-form-item>
+
         <el-form-item label="链接" prop="link">
-          <el-input v-model="formData.link" />
+          <el-input v-model="formData.link" placeholder="请输入链接" />
         </el-form-item>
       </el-form>
+
       <template #footer>
-        <el-button @click="dialogVisible = false">取消</el-button>
-        <el-button type="primary" @click="handleSave">确定</el-button>
+        <span class="dialog-footer">
+          <el-button @click="dialogVisible = false">取消</el-button>
+          <el-button type="primary" @click="handleSave">确定</el-button>
+        </span>
       </template>
     </el-dialog>
   </div>

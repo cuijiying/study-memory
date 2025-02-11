@@ -6,6 +6,8 @@ export interface StudyRecord {
   link: string
   created_at: string
   updated_at: string
+  learning_type_id: number
+  learning_type?: LearningType
   review1_time?: string
   review2_time?: string
   review3_time?: string
@@ -21,6 +23,16 @@ export interface StudyPlan {
   end_time: string
   status: 'pending' | 'in_progress' | 'completed'
   priority: 'high' | 'medium' | 'low'
+  learning_type_id: number
+  learning_type?: LearningType
+  created_at: string
+  updated_at: string
+}
+
+export interface LearningType {
+  id: number
+  name: string
+  description?: string
   created_at: string
   updated_at: string
 } 
