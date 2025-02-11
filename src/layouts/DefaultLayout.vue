@@ -31,6 +31,8 @@ const currentMenuTitle = computed(() => {
       return '学习统计'
     case '/system-settings':
       return '系统设置'
+    case '/learning-types':
+      return '学习类型'
     default:
       return '当前页面'
   }
@@ -72,14 +74,17 @@ const activeIndex = computed(() => {
   switch (path) {
     case '':
       return '1'
-    case 'study-plan':
+    case 'learning-types':
       return '2'
-    case 'study-notes':
+    case 'study-plan':
       return '3'
-    case 'study-statistics':
+    case 'study-notes':
       return '4'
-    case 'system-settings':
+    case 'study-statistics':
       return '5'
+    case 'system-settings':
+      return '6'
+    
     default:
       return '1'
   } 
@@ -125,26 +130,33 @@ onMounted(() => {
             <el-icon><HomeFilled /></el-icon>
             <template #title>首页</template>
           </el-menu-item>
+
+          <el-menu-item index="2" route="/learning-types">
+            <el-icon><Document /></el-icon>
+            <template #title>学习类型</template>
+          </el-menu-item>
           
-          <el-menu-item index="2" route="/study-plan">
+          <el-menu-item index="3" route="/study-plan">
             <el-icon><Calendar /></el-icon>
             <template #title>学习计划</template>
           </el-menu-item>
           
-          <el-menu-item index="3" route="/study-notes">
+          <el-menu-item index="4" route="/study-notes">
             <el-icon><Document /></el-icon>
             <template #title>学习笔记</template>
           </el-menu-item>
           
-          <el-menu-item index="4" route="/study-statistics">
+          <el-menu-item index="5" route="/study-statistics">
             <el-icon><DataAnalysis /></el-icon>
             <template #title>学习统计</template>
           </el-menu-item>
           
-          <el-menu-item index="5" route="/system-settings">
+          <el-menu-item index="6" route="/system-settings">
             <el-icon><Setting /></el-icon>
             <template #title>系统设置</template>
           </el-menu-item>
+
+          
         </el-menu>
       </el-scrollbar>
     </el-aside>
