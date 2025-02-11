@@ -24,6 +24,7 @@ export interface StudyPlan {
   status: 'pending' | 'in_progress' | 'completed'
   priority: 'high' | 'medium' | 'low'
   learning_type_id: number
+  name: string
   learning_type?: LearningType
   created_at: string
   updated_at: string

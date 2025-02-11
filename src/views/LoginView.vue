@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { FormInstance, FormRules, ElMessage} from 'element-plus'
+import type { FormInstance, FormRules} from 'element-plus'
 import { User, Lock } from '@element-plus/icons-vue'
 import { supabase } from '../lib/supabase'
 
@@ -114,7 +114,7 @@ const goToRegister = () => {
           </el-form-item>
           <el-form-item class="remember-forgot">
             <el-checkbox class="cyber-checkbox">记住我</el-checkbox>
-            <el-link type="primary" class="forgot-link">忘记密码？</el-link>
+            <!-- <el-link type="primary" class="forgot-link">忘记密码？</el-link> -->
           </el-form-item>
           <el-form-item>
             <el-button 

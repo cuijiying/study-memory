@@ -146,7 +146,7 @@ onMounted(() => {
             <template #title>学习笔记</template>
           </el-menu-item>
           
-          <el-menu-item index="5" route="/study-statistics">
+          <!-- <el-menu-item index="5" route="/study-statistics">
             <el-icon><DataAnalysis /></el-icon>
             <template #title>学习统计</template>
           </el-menu-item>
@@ -154,7 +154,7 @@ onMounted(() => {
           <el-menu-item index="6" route="/system-settings">
             <el-icon><Setting /></el-icon>
             <template #title>系统设置</template>
-          </el-menu-item>
+          </el-menu-item> -->
 
           
         </el-menu>
