@@ -115,17 +115,13 @@ const goToRegister = () => {
           <el-form-item class="remember-forgot">
             <el-checkbox class="cyber-checkbox">记住我</el-checkbox>
             <!-- <el-link type="primary" class="forgot-link">忘记密码？</el-link> -->
-          </el-form-item>
-          <el-form-item>
             <el-button 
               type="primary" 
               @click="handleLogin(loginFormRef)" 
               class="login-button"
               :loading="loading"
-              block
             >
               <span class="button-content">登录</span>
-              <div class="button-glitch"></div>
             </el-button>
           </el-form-item>
           <div class="register-link">
@@ -326,58 +322,18 @@ const goToRegister = () => {
         }
         
         .remember-forgot {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          margin: 24px 0;
-          
           :deep(.el-checkbox__label) {
             color: rgba(255, 255, 255, 0.9);
           }
-          
-          .forgot-link {
-            color: #409EFF;
-            text-decoration: none;
-            
-            &:hover {
-              text-shadow: 0 0 8px rgba(64, 158, 255, 0.6);
+          .el-button {
+            width: 30%;
+            margin-left: auto;
+            margin-top: 10px;
+            margin-bottom: 10px;
+            .button-content {
+              width: 100%;
+              text-align: center;
             }
-          }
-        }
-        
-        .login-button {
-          height: 48px;
-          font-size: 18px;
-          font-weight: 500;
-          border-radius: 8px;
-          background: linear-gradient(45deg, #409EFF, #36cfc9);
-          border: none;
-          position: relative;
-          overflow: hidden;
-          transition: all 0.3s;
-          
-          .button-content {
-            position: relative;
-            z-index: 2;
-          }
-          
-          .button-glitch {
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-            animation: buttonGlitch 2s infinite;
-          }
-          
-          &:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 20px rgba(64, 158, 255, 0.4);
-          }
-          
-          &:active {
-            transform: translateY(1px);
           }
         }
 
@@ -437,7 +393,7 @@ const goToRegister = () => {
   }
   50% {
     opacity: 0.6;
-    transform: translate(-50%, -50%) scale(1.1);
+    transform: translate(-50%, -50%) scale(1.5);
   }
 }
 

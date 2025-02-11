@@ -192,7 +192,6 @@ const handleCurrentChange = (val: number) => {
 <template>
   <div class="study-plan-view">
     <div class="header">
-      <!-- <h1>学习计划</h1> -->
       <el-button type="primary" @click="showCreateDialog = true">
         新增学习计划
       </el-button>
@@ -403,30 +402,19 @@ const handleCurrentChange = (val: number) => {
 <style lang="scss" scoped>
 .study-plan-view {
   padding: 20px;
+  background: #fff;
+  border-radius: 8px;
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+  }
+  .pagination-container {
+    margin-top: 20px;
+    display: flex;
+    justify-content: flex-end;
+  }
 }
 
-.header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 20px;
-}
-
-.el-table {
-  margin-top: 20px;
-}
-
-.pagination-container {
-  margin-top: 20px;
-  display: flex;
-  justify-content: flex-end;
-}
-
-:deep(.el-dialog__body) {
-  padding: 20px 30px;
-}
-
-:deep(.el-form-item__label) {
-  font-weight: 500;
-}
 </style>
