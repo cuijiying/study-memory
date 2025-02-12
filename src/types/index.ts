@@ -1,18 +1,19 @@
 export interface StudyRecord {
   id: number
-  category: string
+  // category: string
   title: string
   description: string
   link: string
   created_at: string
   updated_at: string
-  learning_type_id: number
+  learning_type_id: number | undefined
   learning_type?: LearningType
   review1_time?: string
   review2_time?: string
   review3_time?: string
   review4_time?: string
   review5_time?: string
+  review_status?: string
 }
 
 export interface StudyPlan {
