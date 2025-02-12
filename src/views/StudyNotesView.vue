@@ -207,7 +207,6 @@ onMounted(async () => {
 <template>
   <div class="study-notes">
     <div class="header">
-      <!-- <h2>学习笔记</h2> -->
       <el-button type="primary" @click="openDialog()">
         <el-icon><Plus /></el-icon>新增笔记
       </el-button>
@@ -360,18 +359,13 @@ onMounted(async () => {
     justify-content: space-between;
     align-items: center;
     margin-bottom: 20px;
-    
-    h2 {
-      margin: 0;
-      font-size: 24px;
-      font-weight: 600;
-    }
+  }
+  .pagination-container {
+    margin-top: 20px;
+    display: flex;
+    justify-content: flex-end;
   }
 }
 
-.pagination-container {
-  margin-top: 20px;
-  display: flex;
-  justify-content: flex-end;
-}
+
 </style> 
