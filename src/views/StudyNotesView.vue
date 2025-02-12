@@ -11,35 +11,63 @@ const currentPage = ref(1)
 const pageSize = ref(10)
 const total = ref(0)
 
+// 查询条件
+const queryParams = ref({
+  learningTypeId: undefined as number | undefined,
+  reviewStatus: 'incomplete' // 'all' | 'complete' | 'incomplete'
+})
+
 // 引入学习类型 store
 const learningTypeStore = useLearningTypeStore()
 const { learningTypes } = storeToRefs(learningTypeStore)
 
 const formData = ref<StudyRecord>({
   id: 0,
-  category: '',
   title: '',
   description: '',
   link: '',
-  learning_type_id: 0,
+  learning_type_id: undefined,
   created_at: '',
   updated_at: ''
 })
 
 const rules = {
-  category: [{ required: true, message: '请选择分类', trigger: 'blur' }],
   title: [{ required: true, message: '请输入标题', trigger: 'blur' }],
-  description: [{ required: true, message: '请输入描述', trigger: 'blur' }],
-  link: [{ required: true, message: '请输入链接', trigger: 'blur' }],
   learning_type_id: [{ required: true, message: '请选择学习类型', trigger: 'change' }]
 }
 
-const categories = [
-  '编程',
-  '语言',
-  '数学',
-  '其他'
-]
+// 判断是否是当天
+const isToday = (date: string) => {
+  const today = new Date()
+  const compareDate = new Date(date)
+  return today.getDate() === compareDate.getDate() &&
+    today.getMonth() === compareDate.getMonth() &&
+    today.getFullYear() === compareDate.getFullYear()
+}
+
+// 更新复习状态
+const updateReviewStatus = async (recordId: number, index: number) => {
+  try {
+    const record = notes.value.find(note => note.id === recordId)
+    if (!record || !record.review_status) return
+    
+    const newStatus = record.review_status.split('')
+    if (newStatus[index] === '1') return // 已完成不能修改
+    
+    newStatus[index] = '1'
+    const { error } = await supabase
+      .from('study_records')
+      .update({ review_status: newStatus.join('') })
+      .eq('id', recordId)
+
+    if (error) throw error
+    record.review_status = newStatus.join('')
+    ElMessage.success('更新复习状态成功')
+  } catch (error) {
+    ElMessage.error('更新复习状态失败')
+    console.error(error)
+  }
+}
 
 // 获取笔记列表
 const fetchNotes = async () => {
@@ -51,28 +79,31 @@ const fetchNotes = async () => {
       return
     }
 
-    // Get total count
-    const countResult = await supabase
-      .from('study_records')
-      .select('*', { count: 'exact', head: true })
+    let query = supabase
+      .from('study_records_types')
+      .select('*', { count: 'exact' })
       .eq('user_id', userId)
-    
-    if (countResult.error) throw countResult.error
-    total.value = countResult.count || 0
 
-    // Get paginated data with learning type
-    const { data, error } = await supabase
-      .from('study_records_types') // 视图
-      .select(`
-        * 
-      `)
-      .eq('user_id', userId)
+    // 添加学习类型筛选
+    if (queryParams.value.learningTypeId) {
+      query = query.eq('learning_type_id', queryParams.value.learningTypeId)
+    }
+
+    // 添加复习状态筛选
+    if (queryParams.value.reviewStatus === 'complete') {
+      query = query.eq('review_status', '11111')
+    } else if (queryParams.value.reviewStatus === 'incomplete') {
+      query = query.neq('review_status', '11111')
+    }
+
+    // Get paginated data with count
+    const { data, error, count } = await query
       .order('created_at', { ascending: false })
       .range((currentPage.value - 1) * pageSize.value, currentPage.value * pageSize.value - 1)
-      
     
     if (error) throw error
     notes.value = data
+    total.value = count || 0
   } catch (error) {
     ElMessage.error('获取笔记列表失败')
     console.error(error)
@@ -90,11 +121,10 @@ const openDialog = (note?: StudyRecord) => {
     isEdit.value = false
     formData.value = {
       id: 0,
-      category: '',
       title: '',
       description: '',
       link: '',
-      learning_type_id: 0,
+      learning_type_id: undefined,
       created_at: '',
       updated_at: ''
     }
@@ -126,7 +156,6 @@ const handleSave = async () => {
       const { error } = await supabase
         .from('study_records')
         .update({
-          category: formData.value.category,
           title: formData.value.title,
           description: formData.value.description,
           link: formData.value.link,
@@ -147,7 +176,6 @@ const handleSave = async () => {
       const { error } = await supabase
         .from('study_records')
         .insert({
-          category: formData.value.category,
           title: formData.value.title,
           description: formData.value.description,
           link: formData.value.link,
@@ -157,7 +185,8 @@ const handleSave = async () => {
           review2_time: review2Time.toISOString(),
           review3_time: review3Time.toISOString(),
           review4_time: review4Time.toISOString(),
-          review5_time: review5Time.toISOString()
+          review5_time: review5Time.toISOString(),
+          review_status: '00000'
         })
 
       if (error) throw error
@@ -187,7 +216,7 @@ const handleDelete = async (id: number) => {
     if (error) throw error
     ElMessage.success('删除成功')
     if (notes.value.length === 1 && currentPage.value > 1) {
-      currentPage.value-- // Go to previous page if current page becomes empty
+      currentPage.value--
     }
     fetchNotes()
   } catch (error) {
@@ -199,7 +228,8 @@ const handleDelete = async (id: number) => {
 }
 
 onMounted(async () => {
-  await learningTypeStore.fetchLearningTypes()
+   await learningTypeStore.fetchLearningTypes()
+   queryParams.value.learningTypeId = learningTypes.value[0].id
   fetchNotes()
 })
 </script>
@@ -207,6 +237,38 @@ onMounted(async () => {
 <template>
   <div class="study-notes">
     <div class="header">
+      <div class="filters">
+        <div class="filter-item">
+          <label>学习类型:</label>
+          <el-select 
+            v-model="queryParams.learningTypeId" 
+            placeholder="选择学习类型"
+            clearable
+            @change="fetchNotes"
+          >
+            <el-option
+              v-for="type in learningTypes"
+              :key="type.id"
+              :label="type.name"
+              :value="type.id"
+            />
+          </el-select>
+        </div>
+
+        <div class="filter-item">
+          <label>复习状态:</label>
+          <el-select 
+            v-model="queryParams.reviewStatus" 
+            placeholder="复习状态"
+            @change="fetchNotes"
+          >
+            <el-option label="全部" value="all" />
+            <el-option label="已完成复习" value="complete" />
+            <el-option label="未完成复习" value="incomplete" />
+          </el-select>
+        </div>
+      </div>
+
       <el-button type="primary" @click="openDialog()">
         <el-icon><Plus /></el-icon>新增笔记
       </el-button>
@@ -219,7 +281,6 @@ onMounted(async () => {
       border
       stripe
     >
-      <el-table-column prop="category" label="分类" width="100" align="center" />
       <el-table-column prop="title" label="标题" align="center" />
       <el-table-column label="学习类型" align="center" width="120">
         <template #default="{ row }">
@@ -232,36 +293,73 @@ onMounted(async () => {
           <el-link type="primary" :href="row.link" target="_blank">{{ row.link }}</el-link>
         </template>
       </el-table-column>
+      <el-table-column label="复习状态" width="200" align="center">
+        <template #default="{ row }">
+          <div class="review-status">
+            <div
+              v-for="(status, index) in row.review_status?.split('')"
+              :key="index"
+              class="status-circle"
+              :class="{
+                'completed': status === '1',
+                'clickable': status === '0'
+              }"
+              @click="status === '0' && updateReviewStatus(row.id, index)"
+            />
+          </div>
+        </template>
+      </el-table-column>
       <el-table-column prop="review1_time" label="第一次复习时间" width="180" align="center">
         <template #default="{ row }">
-          {{ new Date(row.review1_time).toLocaleString() }}
+          <span :class="{ 
+            'review-today': isToday(row.review1_time) && row.review_status[0] === '0',
+            'review-completed': isToday(row.review1_time) && row.review_status[0] === '1'
+          }">
+            {{ new Date(row.review1_time).toLocaleString() }}
+          </span>
         </template>
       </el-table-column>
       <el-table-column prop="review2_time" label="第二次复习时间" width="180" align="center">
         <template #default="{ row }">
-          {{ new Date(row.review2_time).toLocaleString() }}
+          <span :class="{ 
+            'review-today': isToday(row.review2_time) && row.review_status[1] === '0',
+            'review-completed': isToday(row.review2_time) && row.review_status[1] === '1'
+          }">
+            {{ new Date(row.review2_time).toLocaleString() }}
+          </span>
         </template>
       </el-table-column>
       <el-table-column prop="review3_time" label="第三次复习时间" width="180" align="center">
         <template #default="{ row }">
-          {{ new Date(row.review3_time).toLocaleString() }}
+          <span :class="{ 
+            'review-today': isToday(row.review3_time) && row.review_status[2] === '0',
+            'review-completed': isToday(row.review3_time) && row.review_status[2] === '1'
+          }">
+            {{ new Date(row.review3_time).toLocaleString() }}
+          </span>
         </template>
       </el-table-column>
       <el-table-column prop="review4_time" label="第四次复习时间" width="180" align="center">
         <template #default="{ row }">
-          {{ new Date(row.review4_time).toLocaleString() }}
+          <span :class="{ 
+            'review-today': isToday(row.review4_time) && row.review_status[3] === '0',
+            'review-completed': isToday(row.review4_time) && row.review_status[3] === '1'
+          }">
+            {{ new Date(row.review4_time).toLocaleString() }}
+          </span>
         </template>
       </el-table-column>
       <el-table-column prop="review5_time" label="第五次复习时间" width="180" align="center">
         <template #default="{ row }">
-          {{ new Date(row.review5_time).toLocaleString() }}
+          <span :class="{ 
+            'review-today': isToday(row.review5_time) && row.review_status[4] === '0',
+            'review-completed': isToday(row.review5_time) && row.review_status[4] === '1'
+          }">
+            {{ new Date(row.review5_time).toLocaleString() }}
+          </span>
         </template>
       </el-table-column>
-      <el-table-column prop="created_at" label="创建时间" width="180" align="center">
-        <template #default="{ row }">
-          {{ new Date(row.created_at).toLocaleString() }}
-        </template>
-      </el-table-column>
+      
       <el-table-column label="操作" width="150" fixed="right" align="center">
         <template #default="{ row }">
           <el-button-group>
@@ -299,17 +397,6 @@ onMounted(async () => {
         :rules="rules"
         label-width="100px"
       >
-        <el-form-item label="分类" prop="category">
-          <el-select v-model="formData.category" placeholder="请选择分类">
-            <el-option
-              v-for="item in categories"
-              :key="item"
-              :label="item"
-              :value="item"
-            />
-          </el-select>
-        </el-form-item>
-
         <el-form-item label="学习类型" prop="learning_type_id">
           <el-select v-model="formData.learning_type_id" placeholder="请选择学习类型">
             <el-option
@@ -359,13 +446,85 @@ onMounted(async () => {
     justify-content: space-between;
     align-items: center;
     margin-bottom: 20px;
+    padding: 16px;
+    background-color: #f5f7fa;
+    border-radius: 8px;
+
+    .filters {
+      display: flex;
+      gap: 24px;
+      align-items: center;
+
+      .filter-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+
+        label {
+          font-size: 14px;
+          color: #606266;
+          white-space: nowrap;
+        }
+
+        .el-select {
+          width: 180px;
+        }
+      }
+    }
+
+    .el-button {
+      padding: 8px 16px;
+      .el-icon {
+        margin-right: 4px;
+      }
+    }
   }
+
+  .review-status {
+    padding: 5px;
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+
+    .status-circle {
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background-color: #909399;
+      border: 1px solid #fff;
+      box-shadow: 0 0 3px 1px rgba(0, 0, 0, 0.5);
+      &.completed {
+        background-color: #67C23A;
+      }
+
+      &.clickable {
+        cursor: pointer;
+        &:hover {
+          opacity: 0.8;
+        }
+      }
+    }
+  }
+
+  .review-today {
+    background-color: #fef0f0;
+    padding: 4px 8px;
+    border-radius: 4px;
+    color: #f56c6c;
+  }
+
+  .review-completed {
+    background-color: #f0f9eb;
+    padding: 4px 8px;
+    border-radius: 4px;
+    color: #67c23a;
+  }
+
   .pagination-container {
     margin-top: 20px;
     display: flex;
     justify-content: flex-end;
   }
 }
-
 
 </style> 

@@ -20,8 +20,8 @@ const { learningTypes } = storeToRefs(learningTypeStore)
 const newPlan = ref({
   title: '',
   description: '',
-  start_time: '',
-  end_time: '',
+  start_time: null as string | null,
+  end_time: null as string | null,
   status: 'pending' as const,
   priority: 'medium' as const,
   learning_type_id: undefined as number | undefined
@@ -146,8 +146,8 @@ const resetForm = () => {
   newPlan.value = {
     title: '',
     description: '',
-    start_time: '',
-    end_time: '',
+    start_time: null,
+    end_time: null,
     status: 'pending',
     priority: 'medium',
     learning_type_id: undefined
@@ -207,12 +207,12 @@ const handleCurrentChange = (val: number) => {
       <el-table-column prop="description" label="描述" show-overflow-tooltip align="center" />
       <el-table-column prop="start_time" label="开始时间" align="center">
         <template #default="{ row }">
-          {{ new Date(row.start_time).toLocaleString() }}
+          {{ row.start_time ? new Date(row.start_time).toLocaleString() : '未设置' }}
         </template>
       </el-table-column>
       <el-table-column prop="end_time" label="结束时间" align="center">
         <template #default="{ row }">
-          {{ new Date(row.end_time).toLocaleString() }}
+          {{ row.end_time ? new Date(row.end_time).toLocaleString() : '未设置' }}
         </template>
       </el-table-column>
       <el-table-column prop="priority" label="优先级" align="center">
@@ -256,12 +256,20 @@ const handleCurrentChange = (val: number) => {
     </div>
 
     <!-- Create Dialog -->
-    <el-dialog 
-      v-model="showCreateDialog" 
+    <el-dialog
+      v-model="showCreateDialog"
       title="新增学习计划"
-      width="500px"
+      width="50%"
     >
-      <el-form :model="newPlan" label-width="100px">
+      <el-form
+        ref="formRef"
+        :model="newPlan"
+        label-width="120px"
+        :rules="{
+          title: [{ required: true, message: '请输入标题', trigger: 'blur' }],
+          learning_type_id: [{ required: true, message: '请选择学习类型', trigger: 'change' }]
+        }"
+      >
         <el-form-item label="标题" required>
           <el-input v-model="newPlan.title" placeholder="请输入标题" />
         </el-form-item>
@@ -285,7 +293,7 @@ const handleCurrentChange = (val: number) => {
           />
         </el-form-item>
 
-        <el-form-item label="开始时间" required>
+        <el-form-item label="开始时间">
           <el-date-picker
             v-model="newPlan.start_time"
             type="datetime"
@@ -293,7 +301,7 @@ const handleCurrentChange = (val: number) => {
           />
         </el-form-item>
 
-        <el-form-item label="结束时间" required>
+        <el-form-item label="结束时间">
           <el-date-picker
             v-model="newPlan.end_time"
             type="datetime"
@@ -327,12 +335,20 @@ const handleCurrentChange = (val: number) => {
     </el-dialog>
 
     <!-- Edit Dialog -->
-    <el-dialog 
-      v-model="showEditDialog" 
+    <el-dialog
+      v-model="showEditDialog"
       title="编辑学习计划"
-      width="500px"
+      width="50%"
     >
-      <el-form v-if="selectedPlan" :model="selectedPlan" label-width="100px">
+      <el-form
+        ref="editFormRef"
+        :model="selectedPlan"
+        label-width="120px"
+        :rules="{
+          title: [{ required: true, message: '请输入标题', trigger: 'blur' }],
+          learning_type_id: [{ required: true, message: '请选择学习类型', trigger: 'change' }]
+        }"
+      >
         <el-form-item label="标题" required>
           <el-input v-model="selectedPlan.title" placeholder="请输入标题" />
         </el-form-item>
@@ -356,7 +372,7 @@ const handleCurrentChange = (val: number) => {
           />
         </el-form-item>
 
-        <el-form-item label="开始时间" required>
+        <el-form-item label="开始时间">
           <el-date-picker
             v-model="selectedPlan.start_time"
             type="datetime"
@@ -364,7 +380,7 @@ const handleCurrentChange = (val: number) => {
           />
         </el-form-item>
 
-        <el-form-item label="结束时间" required>
+        <el-form-item label="结束时间">
           <el-date-picker
             v-model="selectedPlan.end_time"
             type="datetime"
