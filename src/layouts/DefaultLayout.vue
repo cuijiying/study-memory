@@ -19,6 +19,7 @@ import WeatherWidget from '@/components/WeatherWidget.vue'
 const router = useRouter()
 const route = useRoute()
 const isCollapse = ref(false)
+const showProfileDialog = ref(false)
 
 const currentMenuTitle = computed(() => {
   switch (route.path) {
@@ -42,7 +43,7 @@ const currentMenuTitle = computed(() => {
 const handleCommand = (command: string) => {
   switch (command) {
     case 'profile':
-      // TODO: Navigate to profile page
+      showProfileDialog.value = true
       break
     case 'settings':
       // TODO: Navigate to settings page
@@ -93,9 +94,11 @@ const activeIndex = computed(() => {
 
 // 获取用户名
 const user = ref({
-  username: 'guest'
+  username: 'guest',
+  email: '',
+  created_at: '',
+  last_sign_in_at: ''
 })
-
 
 // 获取用户名
 const getUsername = async () => {
@@ -104,6 +107,9 @@ const getUsername = async () => {
     console.error('Error fetching user:', error)
   }
   user.value.username = data.user?.email || 'guest'
+  user.value.email = data.user?.email || ''
+  user.value.created_at = data.user?.created_at || ''
+  user.value.last_sign_in_at = data.user?.last_sign_in_at || ''
 }
 
 onMounted(() => {
@@ -181,11 +187,11 @@ onMounted(() => {
         <div class="header-right">
           <el-space>
             <WeatherWidget />
-            <el-button class="icon-btn">
+            <!-- <el-button class="icon-btn">
               <el-badge :value="3">
                 <el-icon><Bell /></el-icon>
               </el-badge>
-            </el-button>
+            </el-button> -->
             
             <el-dropdown @command="handleCommand">
               <div class="user-info">
@@ -193,16 +199,17 @@ onMounted(() => {
                 <!-- 获取用户名 -->
                 <span class="username">{{ user.username }}</span>
                 <el-icon><CaretBottom /></el-icon>
-              </div>
+              </div>0
 
               <template #dropdown>
                 <el-dropdown-menu>
+                  <!-- TODO -->
                   <el-dropdown-item command="profile">
                     <el-icon><User /></el-icon>个人信息
                   </el-dropdown-item>
-                  <el-dropdown-item command="settings">
+                  <!-- <el-dropdown-item command="settings">
                     <el-icon><Setting /></el-icon>账号设置
-                  </el-dropdown-item>
+                  </el-dropdown-item> -->
                   <el-dropdown-item divided command="logout">
                     <el-icon><SwitchButton /></el-icon>退出登录
                   </el-dropdown-item>
@@ -220,6 +227,33 @@ onMounted(() => {
           </transition>
         </router-view>
       </el-main>
+
+      <!-- 个人信息弹框 -->
+      <el-dialog
+        v-model="showProfileDialog"
+        title="个人信息"
+        width="30%"
+      >
+        <el-descriptions :column="1" border>
+          <el-descriptions-item label="用户名">
+            {{ user.username }}
+          </el-descriptions-item>
+          <el-descriptions-item label="邮箱">
+            {{ user.email }}
+          </el-descriptions-item>
+          <el-descriptions-item label="注册时间">
+            {{ new Date(user.created_at).toLocaleString() }}
+          </el-descriptions-item>
+          <el-descriptions-item label="最后登录时间">
+            {{ new Date(user.last_sign_in_at).toLocaleString() }}
+          </el-descriptions-item>
+        </el-descriptions>
+        <template #footer>
+          <span class="dialog-footer">
+            <el-button @click="showProfileDialog = false">关闭</el-button>
+          </span>
+        </template>
+      </el-dialog>
     </el-container>
   </el-container>
 </template>
