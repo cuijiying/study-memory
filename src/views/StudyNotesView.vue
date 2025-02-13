@@ -229,8 +229,7 @@ const handleDelete = async (id: number) => {
 
 onMounted(async () => {
    await learningTypeStore.fetchLearningTypes()
-   queryParams.value.learningTypeId = learningTypes.value[0].id
-  fetchNotes()
+   fetchNotes()
 })
 </script>
 
