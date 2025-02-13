@@ -14,6 +14,7 @@ import {
 } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { supabase } from '@/lib/supabase'
+import WeatherWidget from '@/components/WeatherWidget.vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -179,6 +180,7 @@ onMounted(() => {
         
         <div class="header-right">
           <el-space>
+            <WeatherWidget />
             <el-button class="icon-btn">
               <el-badge :value="3">
                 <el-icon><Bell /></el-icon>

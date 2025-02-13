@@ -181,11 +181,11 @@ const handleSave = async () => {
           link: formData.value.link,
           learning_type_id: formData.value.learning_type_id,
           user_id: userId,
-          review1_time: review1Time.toISOString(),
-          review2_time: review2Time.toISOString(),
-          review3_time: review3Time.toISOString(),
-          review4_time: review4Time.toISOString(),
-          review5_time: review5Time.toISOString(),
+          review1_time: review1Time.toLocaleString(),
+          review2_time: review2Time.toLocaleString(),
+          review3_time: review3Time.toLocaleString(),
+          review4_time: review4Time.toLocaleString(),
+          review5_time: review5Time.toLocaleString(),
           review_status: '00000'
         })
 

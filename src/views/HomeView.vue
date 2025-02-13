@@ -129,9 +129,11 @@ const fetchRecentActivities = async () => {
     }[] = []
 
     newRecords?.forEach(record => {
+      const createdTime = new Date(record.created_at)
+      createdTime.setHours(createdTime.getHours() + 8)
       activities.push({
         title: `新增学习: ${record.title}`,
-        time: new Date(record.created_at).toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' }),
+        time: createdTime.toLocaleString(),
         type: 'success',
         timestamp: new Date(record.created_at)
       })
@@ -139,9 +141,11 @@ const fetchRecentActivities = async () => {
 
     updatedRecords?.forEach(record => {
       if(record.updated_at !== record.created_at) {
+        const updatedTime = new Date(record.updated_at)
+        updatedTime.setHours(updatedTime.getHours() + 8)
         activities.push({
           title: `更新笔记状态: ${record.title}`,
-          time: new Date(record.updated_at).toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' }),
+          time: updatedTime.toLocaleString(),
           type: 'info',
           timestamp: new Date(record.updated_at)
         })
