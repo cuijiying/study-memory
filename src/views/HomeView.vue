@@ -57,11 +57,11 @@ const fetchStatistics = async () => {
     const { data: todayRecords, error: error1 } = await supabase
       .from('study_records')
       .select('*')
-      .or(`review1_time.gte.${start.toISOString()},review1_time.lte.${end.toISOString()},` +
-          `review2_time.gte.${start.toISOString()},review2_time.lte.${end.toISOString()},` +
-          `review3_time.gte.${start.toISOString()},review3_time.lte.${end.toISOString()},` +
-          `review4_time.gte.${start.toISOString()},review4_time.lte.${end.toISOString()},` +
-          `review5_time.gte.${start.toISOString()},review5_time.lte.${end.toISOString()}`)
+      .or(`review1_time.gte.${start.toLocaleString()},review1_time.lte.${end.toLocaleString()},` +
+          `review2_time.gte.${start.toLocaleString()},review2_time.lte.${end.toLocaleString()},` +
+          `review3_time.gte.${start.toLocaleString()},review3_time.lte.${end.toLocaleString()},` +
+          `review4_time.gte.${start.toLocaleString()},review4_time.lte.${end.toLocaleString()},` +
+          `review5_time.gte.${start.toLocaleString()},review5_time.lte.${end.toLocaleString()}`)
 
     if (error1) throw error1
 
@@ -78,12 +78,13 @@ const fetchStatistics = async () => {
         record.review5_time
       ]
 
-      reviewTimes.forEach((time, index) => {
+      const resFlag =  reviewTimes.some((time, index) => {
         const reviewTime = new Date(time)
-        if (reviewTime >= start && reviewTime <= end && status[index] === '1') {
-          completedTasks++
-        }
+        return reviewTime >= start && reviewTime <= end && status[index] === '1'
       })
+      if (resFlag) {
+        completedTasks++
+      }
     })
 
     const incompleteTasks = totalTasks - completedTasks

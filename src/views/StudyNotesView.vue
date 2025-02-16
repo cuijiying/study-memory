@@ -168,7 +168,7 @@ const handleSave = async () => {
       ElMessage.success('更新成功')
     } else {
       const review1Time = new Date(new Date().getTime() + 3 * 60 * 60 * 1000)
-      const review2Time = new Date(new Date().getTime() + 24 * 60 * 60 * 1000)
+      const review2Time = new Date(new Date().getTime() + 27 * 60 * 60 * 1000)
       const review3Time = new Date(new Date().getTime() + 3 * 24 * 60 * 60 * 1000)
       const review4Time = new Date(new Date().getTime() + 7 * 24 * 60 * 60 * 1000)
       const review5Time = new Date(new Date().getTime() + 15 * 24 * 60 * 60 * 1000)
