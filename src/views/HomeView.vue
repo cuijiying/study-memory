@@ -52,6 +52,7 @@ const getTodayRange = () => {
 const fetchStatistics = async () => {
   try {
     const { start, end } = getTodayRange()
+    console.log(start.toLocaleString(), end.toLocaleString())
     
     // 获取今日需要复习的记录
     const { data: todayRecords, error: error1 } = await supabase

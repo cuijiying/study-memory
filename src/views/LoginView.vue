@@ -77,7 +77,7 @@ const goToRegister = () => {
           <img src="@/assets/images/logo.svg" alt="Logo" class="logo">
           <div class="logo-glow"></div>
         </div>
-        <h2>学习管理系统</h2>
+        <h2>艾宾浩斯记忆学习系统</h2>
         <p class="subtitle">记录每一步学习的进步</p>
 
       </div>

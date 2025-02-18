@@ -122,7 +122,7 @@ onMounted(() => {
     <el-aside :width="isCollapse ? '64px' : '200px'" class="aside-container">
       <div class="logo-container">
         <img src="@/assets/images/logo.svg" alt="Logo" class="logo">
-        <span class="logo-text" v-show="!isCollapse">学习管理系统</span>
+        <span class="logo-text" v-show="!isCollapse">艾宾浩斯记忆学习系统</span>
       </div>
       <el-scrollbar>
         <el-menu
