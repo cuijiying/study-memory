@@ -55,13 +55,8 @@ const fetchStatistics = async () => {
     
     // 获取今日需要复习的记录
     const { data: todayRecords, error: error1 } = await supabase
-      .from('study_records')
+      .from('study_records_currentday_task')
       .select('*')
-      .or(`review1_time.gte.${start.toLocaleString()},review1_time.lte.${end.toLocaleString()},` +
-          `review2_time.gte.${start.toLocaleString()},review2_time.lte.${end.toLocaleString()},` +
-          `review3_time.gte.${start.toLocaleString()},review3_time.lte.${end.toLocaleString()},` +
-          `review4_time.gte.${start.toLocaleString()},review4_time.lte.${end.toLocaleString()},` +
-          `review5_time.gte.${start.toLocaleString()},review5_time.lte.${end.toLocaleString()}`)
 
     if (error1) throw error1
 

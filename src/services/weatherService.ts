@@ -2,6 +2,7 @@ import axios from 'axios';
 
 const API_KEY = '73d77beb1852ea0ed38707c2cab3175d';
 const BASE_URL = 'https://api.openweathermap.org/data/2.5/forecast';
+const IP_LOCATION_URL = 'https://ipapi.co/json/';
 
 export interface WeatherData {
   date: string;
@@ -12,11 +13,16 @@ export interface WeatherData {
   windSpeed?: number;
 }
 
-export const getWeatherForecast = async (city: string = 'Hefei'): Promise<WeatherData[]> => {
+export const getWeatherForecast = async (): Promise<WeatherData[]> => {
   try {
+    // // 获取用户IP对应的城市
+    // const locationResponse = await axios.get(IP_LOCATION_URL);
+    // const city = locationResponse.data.city;
+
     const response = await axios.get(BASE_URL, {
       params: {
-        q: city,
+        // q: city,
+        q: 'Hefei',
         appid: API_KEY,
         units: 'metric', // 直接使用摄氏度
         lang: 'zh_cn',
