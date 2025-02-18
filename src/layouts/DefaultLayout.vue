@@ -21,23 +21,38 @@ const route = useRoute()
 const isCollapse = ref(false)
 const showProfileDialog = ref(false)
 
-const currentMenuTitle = computed(() => {
-  switch (route.path) {
-    case '/':
-      return '首页'
-    case '/study-plan':
-      return '学习计划'
-    case '/study-notes':
-      return '学习笔记'
-    case '/study-statistics':
-      return '学习统计'
-    case '/system-settings':
-      return '系统设置'
-    case '/learning-types':
-      return '学习类型'
-    default:
-      return '当前页面'
+// 从路由配置中获取菜单项
+const menuItems = computed(() => {
+  const layout = router.options.routes.find(route => route.path === '/')
+  if (!layout || !layout.children) return []
+  
+  return layout.children
+    .filter(route => !route.meta?.hideInMenu)
+    .map((route, index) => ({
+      index: String(index + 1),
+      path: route.path ? `/${route.path}` : '/',
+      name: route.name as string,
+      meta: route.meta || {}
+    }))
+})
+
+// 获取菜单图标
+const getMenuIcon = (path: string) => {
+  const menuIcons: Record<string, any> = {
+    '/': HomeFilled,
+    '/study-plan': Calendar,
+    '/study-notes': Document,
+    '/study-statistics': DataAnalysis,
+    '/system-settings': Setting,
+    '/learning-types': Document,
+    '/issues': Document
   }
+  return menuIcons[path] || Document
+}
+
+const currentMenuTitle = computed(() => {
+  const currentRoute = router.currentRoute.value
+  return currentRoute.meta.title as string || '当前页面'
 })
 
 const handleCommand = (command: string) => {
@@ -71,25 +86,9 @@ const handleLogout = async () => {
 
 // 根据路由获取当前路由的index
 const activeIndex = computed(() => {
-  // 获取当前路由的index
-  const path = route.path.split('/').pop()
-  switch (path) {
-    case '':
-      return '1'
-    case 'learning-types':
-      return '2'
-    case 'study-plan':
-      return '3'
-    case 'study-notes':
-      return '4'
-    case 'study-statistics':
-      return '5'
-    case 'system-settings':
-      return '6'
-    
-    default:
-      return '1'
-  } 
+  const currentPath = route.path === '/' ? '/' : `/${route.path.split('/')[1]}`
+  const menuItem = menuItems.value.find(item => item.path === currentPath)
+  return menuItem?.index || '1'
 })
 
 // 获取用户名
@@ -133,37 +132,15 @@ onMounted(() => {
           :collapse-transition="false"
           router
         >
-          <el-menu-item index="1" route="/">
-            <el-icon><HomeFilled /></el-icon>
-            <template #title>首页</template>
+          <el-menu-item
+            v-for="item in menuItems"
+            :key="item.path"
+            :index="item.index"
+            :route="item.path"
+          >
+            <el-icon><component :is="getMenuIcon(item.path)" /></el-icon>
+            <template #title>{{ item.meta.title }}</template>
           </el-menu-item>
-
-          <el-menu-item index="2" route="/learning-types">
-            <el-icon><Document /></el-icon>
-            <template #title>学习类型</template>
-          </el-menu-item>
-          
-          <el-menu-item index="3" route="/study-plan">
-            <el-icon><Calendar /></el-icon>
-            <template #title>学习计划</template>
-          </el-menu-item>
-          
-          <el-menu-item index="4" route="/study-notes">
-            <el-icon><Document /></el-icon>
-            <template #title>学习笔记</template>
-          </el-menu-item>
-          
-          <!-- <el-menu-item index="5" route="/study-statistics">
-            <el-icon><DataAnalysis /></el-icon>
-            <template #title>学习统计</template>
-          </el-menu-item>
-          
-          <el-menu-item index="6" route="/system-settings">
-            <el-icon><Setting /></el-icon>
-            <template #title>系统设置</template>
-          </el-menu-item> -->
-
-          
         </el-menu>
       </el-scrollbar>
     </el-aside>

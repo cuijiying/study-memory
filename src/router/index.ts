@@ -8,13 +8,13 @@ const router = createRouter({
       path: '/login',
       name: 'login',
       component: () => import('../views/LoginView.vue'),
-      meta: { requiresAuth: false }
+      meta: { requiresAuth: false, hideInMenu: true }
     },
     {
       path: '/register',
       name: 'register',
       component: () => import('../views/RegisterView.vue'),
-      meta: { requiresAuth: false }
+      meta: { requiresAuth: false, hideInMenu: true }
     },
     {
       path: '/',
@@ -26,25 +26,37 @@ const router = createRouter({
           path: '',
           name: 'home',
           component: () => import('../views/HomeView.vue'),
-          meta: { requiresAuth: true }
+          meta: { requiresAuth: true, title: '首页' }
         },
         {
           path: 'study-notes',
           name: 'study-notes',
           component: () => import('../views/StudyNotesView.vue'),
-          meta: { requiresAuth: true }
+          meta: { requiresAuth: true, title: '学习笔记' }
         },
         {
           path: 'study-plan',
           name: 'study-plan',
           component: () => import('../views/StudyPlanView.vue'),
-          meta: { requiresAuth: true }
+          meta: { requiresAuth: true, title: '学习计划' }
         },
         {
           path: 'learning-types',
           name: 'learning-types',
           component: () => import('../views/LearningTypeView.vue'),
-          meta: { requiresAuth: true }
+          meta: { requiresAuth: true, title: '学习类型' }
+        },
+        {
+          path: 'issues',
+          name: 'issues',
+          component: () => import('../views/IssuesView.vue'),
+          meta: { requiresAuth: true, title: '问题管理' }
+        },
+        {
+          path: 'issues/:id',
+          name: 'issue-detail',
+          component: () => import('../views/IssueDetailView.vue'),
+          meta: { requiresAuth: true, title: '问题详情', hideInMenu: true }
         }
       ]
     }
