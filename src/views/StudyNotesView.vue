@@ -10,6 +10,7 @@ const isEdit = ref(false)
 const currentPage = ref(1)
 const pageSize = ref(10)
 const total = ref(0)
+const tableHeight = ref('400px')
 
 // 查询条件
 const queryParams = ref({
@@ -35,6 +36,17 @@ const rules = {
   title: [{ required: true, message: '请输入标题', trigger: 'blur' }],
   learning_type_id: [{ required: true, message: '请选择学习类型', trigger: 'change' }]
 }
+
+// 计算表格高度
+const calcTableHeight = () => {
+  // 获取视窗高度
+  const windowHeight = window.innerHeight
+  // 减去其他元素的高度(header + pagination + padding等)
+  tableHeight.value = `${windowHeight - 280}px`
+}
+
+// 监听窗口大小变化
+window.addEventListener('resize', calcTableHeight)
 
 // 判断是否是当天
 const isToday = (date: string) => {
@@ -230,6 +242,11 @@ const handleDelete = async (id: number) => {
 onMounted(async () => {
    await learningTypeStore.fetchLearningTypes()
    fetchNotes()
+   calcTableHeight()
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('resize', calcTableHeight)
 })
 </script>
 
@@ -276,6 +293,7 @@ onMounted(async () => {
     <el-table
       v-loading="loading"
       :data="notes"
+      :height="tableHeight"
       style="width: 100%"
       border
       stripe
