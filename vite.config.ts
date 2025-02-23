@@ -34,5 +34,17 @@ export default defineConfig({
         additionalData: `@use "@/styles/variables.scss" as *;`
       }
     }
+  },
+  server: {
+    port: 8080,
+    open: true,
+    host: true,
+    proxy: {
+      '/api': {
+        target: 'https://api.tushare.pro',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api/, '')
+      }
+    }
   }
 })

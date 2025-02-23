@@ -46,6 +46,7 @@ declare module 'vue' {
     ElTooltip: typeof import('element-plus/es')['ElTooltip']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
+    StockInfo: typeof import('./src/components/StockInfo.vue')['default']
     WeatherWidget: typeof import('./src/components/WeatherWidget.vue')['default']
   }
   export interface ComponentCustomProperties {

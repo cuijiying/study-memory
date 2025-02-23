@@ -57,6 +57,12 @@ const router = createRouter({
           name: 'issue-detail',
           component: () => import('../views/IssueDetailView.vue'),
           meta: { requiresAuth: true, title: '问题详情', hideInMenu: true }
+        },
+        {
+          path: 'stock-market',
+          name: 'stock-market',
+          component: () => import('../views/StockMarketView.vue'),
+          meta: { requiresAuth: true, title: '股票市场' }
         }
       ]
     }
