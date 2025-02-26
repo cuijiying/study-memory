@@ -12,7 +12,6 @@ export const useAuthStore = defineStore('auth', () => {
       const { data: { user: initialUser } } = await supabase.auth.getUser()
       user.value = initialUser
       console.log(user.value,'user')
-
       // Listen for auth changes
       supabase.auth.onAuthStateChange((_, session) => {
         user.value = session?.user ?? null

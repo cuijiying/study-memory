@@ -35,53 +35,30 @@ interface StockBasicInfo {
 }
 
 export const tushareApi = {
-  async getStockBasicInfo(): Promise<StockBasicInfo[]> {
+  async getStockBasicInfo(page: number = 1, pageSize: number = 20): Promise<{ data: StockBasicInfo[], total: number }> {
     try {
       // First try to get data from Supabase
+      const { count: total, error: countError } = await supabase
+        .from('stock_basic')
+        .select('*', { count: 'exact', head: true });
+
+      console.log('total', total);
+      if (countError) throw countError;
+
       const { data: supabaseData, error: supabaseError } = await supabase
         .from('stock_basic')
-        .select('*');
+        .select('*')
+        .range((page - 1) * pageSize, page * pageSize - 1);
 
-      // If we have data in Supabase and it's the same day, return it
-      if (supabaseData && supabaseData.length > 0) {
-        return supabaseData;
-      }
+      if (supabaseError) throw supabaseError;
 
-      // If no data in Supabase or it's a new day, fetch from Tushare
-      const response = await axios.post<TushareResponse<{ items: StockBasicInfo[] }>>(
-        TUSHARE_API_URL,
-        {
-          api_name: 'stock_basic',
-          token: API_TOKEN,
-          params: {
-            exchange: '',
-            list_status: 'L'
-          },
-          fields: 'ts_code,symbol,name,area,industry,fullname,enname,cnspell,market,exchange,curr_type,list_status,list_date,delist_date,is_hs,act_name,act_ent_type'
-        }
-      );
-
-      if (response.data.code !== 0) {
-        throw new Error(response.data.msg);
-      }
-
-      const stockData = response.data.data.items;
-
-      // Upsert data to Supabase
-      const { error } = await supabase
-        .from('stock_basic')
-        .upsert(stockData, {
-          onConflict: 'ts_code'
-        });
-
-      if (error) {
-        console.error('Failed to upsert data to Supabase:', error);
-      }
-
-      return stockData;
+      return {
+        data: supabaseData || [],
+        total: total || 0
+      };
     } catch (error) {
       console.error('Failed to fetch stock basic info:', error);
-      return [];
+      return { data: [], total: 0 };
     }
   },
 

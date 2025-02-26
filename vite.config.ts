@@ -36,13 +36,12 @@ export default defineConfig({
     }
   },
   server: {
-    port: 8080,
+    port: 8888,
     open: true,
-    host: true,
+    host: '0.0.0.0',
     proxy: {
       '/api': {
         target: 'https://api.tushare.pro',
-        changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api/, '')
       }
     }

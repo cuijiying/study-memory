@@ -1,90 +1,6 @@
-<template>
-  <div class="stock-info">
-    <el-card class="stock-card">
-      <template #header>
-        <div class="card-header">
-          <h3>股票信息</h3>
-          <div class="search-area">
-            <el-input
-              v-model="searchQuery"
-              placeholder="搜索股票代码/名称/拼音"
-              clearable
-              @input="handleSearch"
-              style="width: 250px"
-            >
-              <template #prefix>
-                <el-icon><Search /></el-icon>
-              </template>
-            </el-input>
-          </div>
-        </div>
-      </template>
-
-      <el-table
-        :data="paginatedStocks"
-        style="width: 100%"
-        height="500"
-        v-loading="loading"
-        border
-      >
-        <el-table-column prop="ts_code" label="股票代码" width="100" fixed />
-        <el-table-column prop="name" label="股票名称" width="100" fixed />
-        <el-table-column prop="fullname" label="股票全称"  />
-        <el-table-column prop="cnspell" label="拼音简称"  />
-        <el-table-column prop="area" label="地区"  />
-        <el-table-column prop="industry" label="行业"  />
-        <el-table-column prop="market" label="市场类型" />
-        <el-table-column prop="exchange" label="交易所"  />
-        <el-table-column prop="curr_type" label="交易货币"  />
-        <el-table-column prop="list_date" label="上市日期"  />
-        <el-table-column prop="is_hs" label="是否沪深港通" >
-          <template #default="{ row }">
-            {{ formatHsStatus(row.is_hs) }}
-          </template>
-        </el-table-column>
-        <el-table-column label="操作" width="120" fixed="right">
-          <template #default="{ row }">
-            <el-button
-              type="primary"
-              size="small"
-              @click="showDailyData(row.ts_code)"
-            >
-              行情
-            </el-button>
-          </template>
-        </el-table-column>
-      </el-table>
-
-      <div class="pagination-container">
-        <el-pagination
-          v-model:current-page="currentPage"
-          v-model:page-size="pageSize"
-          :page-sizes="[10, 20, 50, 100]"
-          :total="filteredStocks.length"
-          layout="total, sizes, prev, pager, next, jumper"
-          @size-change="handleSizeChange"
-          @current-change="handleCurrentChange"
-        />
-      </div>
-
-      <!-- 日线数据弹窗 -->
-      <el-dialog
-        v-model="dialogVisible"
-        title="股票日线数据"
-        width="80%"
-        destroy-on-close
-      >
-        <div ref="chartContainer" style="height: 500px"></div>
-      </el-dialog>
-    </el-card>
-  </div>
-</template>
-
 <script setup lang="ts">
 import { ref, computed, onMounted, onBeforeUnmount, nextTick } from 'vue';
-import { Search } from '@element-plus/icons-vue';
 import { tushareApi } from '@/services/tushare';
-import type { StockBasicInfo } from '@/services/tushare';
 import * as echarts from 'echarts';
 
 const stocks = ref<StockBasicInfo[]>([]);
@@ -98,20 +14,21 @@ let chart: echarts.ECharts | null = null;
 // 分页相关
 const currentPage = ref(1);
 const pageSize = ref(20);
+const total = ref(0);
 
-const paginatedStocks = computed(() => {
-  const startIndex = (currentPage.value - 1) * pageSize.value;
-  const endIndex = startIndex + pageSize.value;
-  return filteredStocks.value.slice(startIndex, endIndex);
-});
+let tableHeight = ref('600px');
 
-const handleSizeChange = (val: number) => {
+const paginatedStocks = computed(() => filteredStocks.value);
+
+const handleSizeChange = async (val: number) => {
   pageSize.value = val;
   currentPage.value = 1;
+  await fetchStocks();
 };
 
-const handleCurrentChange = (val: number) => {
+const handleCurrentChange = async (val: number) => {
   currentPage.value = val;
+  await fetchStocks();
 };
 
 const handleSearch = () => {
@@ -127,6 +44,21 @@ const handleSearch = () => {
     stock.cnspell.toLowerCase().includes(query)
   );
   currentPage.value = 1;
+};
+
+const fetchStocks = async () => {
+  loading.value = true;
+  try {
+    const { data, total: totalCount } = await tushareApi.getStockBasicInfo(currentPage.value, pageSize.value);
+    stocks.value = data;
+    filteredStocks.value = data;
+    total.value = totalCount;
+  } catch (error) {
+    console.error('Failed to fetch stocks:', error);
+    ElMessage.error('获取股票列表失败');
+  } finally {
+    loading.value = false;
+  }
 };
 
 const formatHsStatus = (status: string) => {
@@ -213,29 +145,116 @@ const showDailyData = async (tsCode: string) => {
 };
 
 onMounted(async () => {
-  loading.value = true;
-  try {
-    stocks.value = await tushareApi.getStockBasicInfo();
-    filteredStocks.value = stocks.value;
-  } catch (error) {
-    console.error('Failed to load stocks:', error);
-    ElMessage.error('获取股票列表失败');
-  } finally {
-    loading.value = false;
-  }
+  await fetchStocks();
+  calcTableHeight();
 });
+
+// 计算表格高度
+const calcTableHeight = () => {
+  // 获取视窗高度
+  const windowHeight = window.innerHeight
+  // 减去其他元素的高度(header + pagination + padding等)
+  tableHeight.value = `${windowHeight - 280}px`
+}
+
+// 监听窗口大小变化
+window.addEventListener('resize', calcTableHeight)
 
 onBeforeUnmount(() => {
   if (chart) {
     chart.dispose();
     chart = null;
   }
+  window.removeEventListener('resize', calcTableHeight)
 });
 </script>
 
-<style scoped>
+<template>
+  <div class="stock-info">
+    <el-card class="stock-card">
+      <template #header>
+        <div class="card-header">
+          <h3>股票信息</h3>
+          <div class="search-area">
+            <el-input
+              v-model="searchQuery"
+              placeholder="搜索股票代码/名称/拼音"
+              clearable
+              @input="handleSearch"
+              style="width: 250px"
+            >
+              <template #prefix>
+                <el-icon><Search /></el-icon>
+              </template>
+            </el-input>
+          </div>
+        </div>
+      </template>
+
+      <el-table
+        :data="paginatedStocks"
+        style="width: 100%"
+        :height="tableHeight"
+        v-loading="loading"
+        border
+      >
+        <el-table-column prop="ts_code" label="股票代码" width="100" fixed />
+        <el-table-column prop="name" label="股票名称" width="100" fixed />
+        <el-table-column prop="fullname" label="股票全称"  />
+        <el-table-column prop="cnspell" label="拼音简称"  />
+        <el-table-column prop="area" label="地区"  />
+        <el-table-column prop="industry" label="行业"  />
+        <el-table-column prop="market" label="市场类型" />
+        <el-table-column prop="exchange" label="交易所"  />
+        <el-table-column prop="curr_type" label="交易货币"  />
+        <el-table-column prop="list_date" label="上市日期"  />
+        <el-table-column prop="is_hs" label="是否沪深港通" >
+          <template #default="{ row }">
+            {{ formatHsStatus(row.is_hs) }}
+          </template>
+        </el-table-column>
+        <el-table-column label="操作" width="120" fixed="right">
+          <template #default="{ row }">
+            <el-button
+              type="primary"
+              size="small"
+              @click="showDailyData(row.ts_code)"
+            >
+              行情
+            </el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+
+      <div class="pagination-container">
+        <el-pagination
+          v-model:current-page="currentPage"
+          v-model:page-size="pageSize"
+          :page-sizes="[10, 20, 50, 100]"
+          :total="total"
+          layout="total, sizes, prev, pager, next, jumper"
+          @size-change="handleSizeChange"
+          @current-change="handleCurrentChange"
+        />
+      </div>
+
+      <!-- 日线数据弹窗 -->
+      <el-dialog
+        v-model="dialogVisible"
+        title="股票日线数据"
+        width="80%"
+        destroy-on-close
+      >
+        <div ref="chartContainer" style="height: 500px"></div>
+      </el-dialog>
+    </el-card>
+  </div>
+</template>
+
+
+<style lang="scss" scoped>
 .stock-info {
-  padding: 20px;
+  /* padding: 20px; */
 }
 
 .stock-card {
