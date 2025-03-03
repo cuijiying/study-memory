@@ -62,7 +62,7 @@ const router = createRouter({
           path: 'stock-market',
           name: 'stock-market',
           component: () => import('../views/StockMarketView.vue'),
-          meta: { requiresAuth: true, title: '股票市场' }
+          meta: { requiresAuth: true, title: 'market' }
         }
       ]
     }

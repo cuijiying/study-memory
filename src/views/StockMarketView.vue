@@ -3,6 +3,20 @@ import { ref, computed, onMounted, onBeforeUnmount, nextTick } from 'vue';
 import { tushareApi } from '@/services/tushare';
 import * as echarts from 'echarts';
 
+interface StockBasicInfo {
+  ts_code: string;
+  name: string;
+  fullname: string;
+  cnspell: string;
+  area: string;
+  industry: string;
+  market: string;
+  exchange: string;
+  curr_type: string;
+  list_date: string;
+  is_hs: string;
+}
+
 const stocks = ref<StockBasicInfo[]>([]);
 const filteredStocks = ref<StockBasicInfo[]>([]);
 const searchQuery = ref('');
@@ -174,7 +188,7 @@ onBeforeUnmount(() => {
     <el-card class="stock-card">
       <template #header>
         <div class="card-header">
-          <h3>股票信息</h3>
+          <h3>market</h3>
           <div class="search-area">
             <el-input
               v-model="searchQuery"
@@ -265,6 +279,7 @@ onBeforeUnmount(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  // background-color: $danger-color;
 }
 
 .card-header h3 {
