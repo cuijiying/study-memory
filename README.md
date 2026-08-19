@@ -3,6 +3,8 @@
 基于 **艾宾浩斯遗忘曲线** 的个人学习记忆系统。本仓库同时是一套 **Vue 3 + Vercel + Supabase** 全栈实践：前端用 Vite 构建 SPA，后端与鉴权全部交给 Supabase，静态资源与 SPA 路由托管在 Vercel。
 
 线上地址：[https://study-memory.vercel.app](https://study-memory.vercel.app)
+![Uploading image.png…]()
+
 
 ---
 
