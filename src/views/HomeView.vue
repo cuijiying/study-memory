@@ -47,7 +47,7 @@ onMounted(loadDashboard)
 </script>
 
 <template>
-  <div v-loading="loading" class="home-container">
+  <div v-loading="loading" class="home-container page-panel">
     <div class="welcome-section">
       <h1>学习数据概览</h1>
       <p class="subtitle">温故而知新；学而时习之；稳故 → 学新 → 创新；知行合一。</p>
@@ -104,12 +104,12 @@ onMounted(loadDashboard)
     h1 {
       font-size: 28px;
       font-weight: 600;
-      color: #2c3e50;
+      color: var(--app-text-primary);
       margin-bottom: 8px;
     }
 
     .subtitle {
-      color: #606266;
+      color: var(--app-text-secondary);
       font-size: 16px;
     }
   }
@@ -144,18 +144,18 @@ onMounted(loadDashboard)
         .stat-info {
           .stat-title {
             font-size: 14px;
-            color: #606266;
+            color: var(--app-text-secondary);
             margin-bottom: 4px;
           }
 
           .stat-value {
             font-size: 24px;
             font-weight: 600;
-            color: #303133;
+            color: var(--app-text-primary);
 
             .stat-unit {
               font-size: 14px;
-              color: #909399;
+              color: var(--app-text-muted);
               margin-left: 4px;
             }
           }
@@ -165,15 +165,15 @@ onMounted(loadDashboard)
   }
 
   .activities-section {
-    background: white;
+    background: var(--app-surface-muted);
     padding: 24px;
     border-radius: 8px;
-    box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
+    border: 1px solid var(--app-border);
 
     h2 {
       font-size: 20px;
       font-weight: 600;
-      color: #2c3e50;
+      color: var(--app-text-primary);
       margin-bottom: 24px;
     }
   }

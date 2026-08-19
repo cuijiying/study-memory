@@ -162,7 +162,7 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="study-plan-view">
+  <div class="study-plan-view page-panel">
     <div class="header">
       <el-button type="primary" @click="showCreateDialog = true">新增学习计划</el-button>
     </div>
@@ -301,10 +301,6 @@ onMounted(async () => {
 
 <style lang="scss" scoped>
 .study-plan-view {
-  padding: 20px;
-  background: #fff;
-  border-radius: 8px;
-
   .header {
     margin-bottom: 20px;
   }

@@ -176,8 +176,8 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="study-notes">
-    <div class="header">
+  <div class="study-notes page-panel">
+    <div class="header page-panel__header">
       <div class="filters">
         <div class="filter-item">
           <label>学习类型:</label>
@@ -307,18 +307,8 @@ onMounted(async () => {
 
 <style lang="scss" scoped>
 .study-notes {
-  padding: 20px;
-  background: #fff;
-  border-radius: 8px;
-
   .header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
     margin-bottom: 20px;
-    padding: 16px;
-    background-color: #f5f7fa;
-    border-radius: 8px;
 
     .filters {
       display: flex;
@@ -332,7 +322,7 @@ onMounted(async () => {
 
         label {
           font-size: 14px;
-          color: #606266;
+          color: var(--app-text-secondary);
           white-space: nowrap;
         }
 
@@ -373,17 +363,17 @@ onMounted(async () => {
   }
 
   .review-today {
-    background-color: #fef0f0;
+    background-color: var(--app-review-today-bg);
     padding: 4px 8px;
     border-radius: 4px;
-    color: #f56c6c;
+    color: var(--app-review-today-text);
   }
 
   .review-completed {
-    background-color: #f0f9eb;
+    background-color: var(--app-review-done-bg);
     padding: 4px 8px;
     border-radius: 4px;
-    color: #67c23a;
+    color: var(--app-review-done-text);
   }
 
   .pagination-container {

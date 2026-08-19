@@ -13,10 +13,13 @@ import {
 } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { useAuthStore } from '@/stores/auth'
+import { useThemeStore } from '@/stores/theme'
+import ThemeToggle from '@/components/ThemeToggle.vue'
 
 const router = useRouter()
 const route = useRoute()
 const authStore = useAuthStore()
+const themeStore = useThemeStore()
 const { user } = storeToRefs(authStore)
 const isCollapse = ref(false)
 const showProfileDialog = ref(false)
@@ -61,7 +64,7 @@ const handleCommand = (command: string) => {
       showProfileDialog.value = true
       break
     case 'settings':
-      // TODO: Navigate to settings page
+      themeStore.toggleTheme()
       break
     case 'logout':
       handleLogout()
@@ -98,7 +101,7 @@ const userLastSignInAt = computed(() => user.value?.last_sign_in_at || '')
     <el-aside :width="isCollapse ? '64px' : '200px'" class="aside-container">
       <div class="logo-container">
         <img src="@/assets/images/logo.svg" alt="Logo" class="logo">
-        <span class="logo-text" v-show="!isCollapse">艾宾浩斯记忆学习系统</span>
+        <span class="logo-text" v-show="!isCollapse">记忆学习系统</span>
       </div>
       <el-scrollbar>
         <el-menu
@@ -138,6 +141,7 @@ const userLastSignInAt = computed(() => user.value?.last_sign_in_at || '')
         </div>
         
         <div class="header-right">
+          <ThemeToggle />
           <el-dropdown @command="handleCommand">
               <div class="user-info">
                 <el-avatar :size="32" src="https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png" />
@@ -152,9 +156,9 @@ const userLastSignInAt = computed(() => user.value?.last_sign_in_at || '')
                   <el-dropdown-item command="profile">
                     <el-icon><User /></el-icon>个人信息
                   </el-dropdown-item>
-                  <!-- <el-dropdown-item command="settings">
-                    <el-icon><Setting /></el-icon>账号设置
-                  </el-dropdown-item> -->
+                  <el-dropdown-item command="settings">
+                    {{ themeStore.isDark ? '切换浅色皮肤' : '切换深色皮肤' }}
+                  </el-dropdown-item>
                   <el-dropdown-item divided command="logout">
                     <el-icon><SwitchButton /></el-icon>退出登录
                   </el-dropdown-item>
@@ -205,49 +209,51 @@ const userLastSignInAt = computed(() => user.value?.last_sign_in_at || '')
 <style lang="scss" scoped>
 .layout-container {
   height: 100vh;
+  background: var(--app-bg);
 
   .aside-container {
-    background-color: #304156;
+    background-color: var(--app-sidebar-bg);
+    border-right: 1px solid var(--app-border);
     transition: width 0.3s;
     display: flex;
     flex-direction: column;
-    
+
     .logo-container {
       height: 60px;
       display: flex;
       align-items: center;
       padding: 0 16px;
       overflow: hidden;
-      
+      border-bottom: 1px solid var(--app-border);
+
       .logo {
         width: 32px;
         height: 32px;
         margin-right: 8px;
       }
-      
+
       .logo-text {
-        color: white;
-        font-size: 18px;
+        color: var(--app-sidebar-text);
+        font-size: 16px;
         font-weight: 600;
         white-space: nowrap;
       }
     }
-    
+
     .sidebar-menu {
       border-right: none;
       background: transparent;
-        // 文字颜色设置
-        .el-menu-item {
-            color: white;
-        }
-        
+
       :deep(.el-menu-item) {
+        color: var(--app-sidebar-text);
+
         &.is-active {
-          background-color: var(--el-color-primary);
+          background-color: var(--app-sidebar-active);
+          color: #fff;
         }
-        
+
         &:hover {
-          background-color: #99afe2;
+          background-color: var(--app-sidebar-hover);
         }
       }
     }
@@ -255,38 +261,35 @@ const userLastSignInAt = computed(() => user.value?.last_sign_in_at || '')
 
   .main-container {
     .el-header {
-      background-color: white;
-      border-bottom: 1px solid #dcdfe6;
+      background-color: var(--app-header-bg);
+      border-bottom: 1px solid var(--app-border);
       display: flex;
       justify-content: space-between;
       align-items: center;
       padding: 0 16px;
-      
+
       .header-left {
         display: flex;
         align-items: center;
         gap: 16px;
-        
+
         .collapse-btn {
           padding: 6px;
           border: none;
-          
+          background: transparent;
+          color: var(--app-text-primary);
+
           &:hover {
-            background-color: var(--el-color-primary-light-9);
+            background-color: var(--app-surface-muted);
           }
         }
       }
-      
+
       .header-right {
-        .icon-btn {
-          padding: 8px;
-          border: none;
-          
-          &:hover {
-            background-color: var(--el-color-primary-light-9);
-          }
-        }
-        
+        display: flex;
+        align-items: center;
+        gap: 12px;
+
         .user-info {
           display: flex;
           align-items: center;
@@ -294,23 +297,23 @@ const userLastSignInAt = computed(() => user.value?.last_sign_in_at || '')
           cursor: pointer;
           padding: 4px 8px;
           border-radius: 4px;
-          
+
           &:hover {
-            background-color: var(--el-color-primary-light-9);
+            background-color: var(--app-surface-muted);
           }
-          
+
           .username {
             font-size: 14px;
-            color: var(--el-text-color-primary);
+            color: var(--app-text-primary);
           }
         }
       }
     }
 
     .el-main {
-      background-color: #f0f2f5;
+      background-color: var(--app-bg);
       padding: 16px;
-      
+
       .fade-enter-active,
       .fade-leave-active {
         transition: opacity 0.3s ease;

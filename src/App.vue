@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { RouterView } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
-import { onMounted } from 'vue'
+import { useThemeStore } from '@/stores/theme'
 
 const authStore = useAuthStore()
+const themeStore = useThemeStore()
 
 onMounted(() => {
+  themeStore.initialize()
   authStore.initialize()
 })
 </script>
@@ -13,7 +15,3 @@ onMounted(() => {
 <template>
   <RouterView />
 </template>
-
-<style scoped>
-
-</style>

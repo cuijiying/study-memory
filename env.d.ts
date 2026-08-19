@@ -25,4 +25,6 @@ declare module '@element-plus/icons-vue' {
   export const Timer: any
   export const Check: any
   export const List: any
+  export const Moon: any
+  export const Sunny: any
 }

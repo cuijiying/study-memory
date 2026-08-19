@@ -1,0 +1,71 @@
+/* 应用级主题变量 — 浅色皮肤（当前默认浅色样式） */
+html[data-theme='light'] {
+  --app-bg: #f0f2f5;
+  --app-surface: #ffffff;
+  --app-surface-muted: #f5f7fa;
+  --app-text-primary: #303133;
+  --app-text-secondary: #606266;
+  --app-text-muted: #909399;
+  --app-border: #dcdfe6;
+  --app-sidebar-bg: #304156;
+  --app-sidebar-text: #ffffff;
+  --app-sidebar-hover: #3d5570;
+  --app-sidebar-active: var(--el-color-primary);
+  --app-header-bg: #ffffff;
+  --app-auth-brand-bg: #304156;
+  --app-auth-brand-text: #ffffff;
+  --app-auth-brand-subtext: rgba(255, 255, 255, 0.75);
+  --app-card-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
+  --app-review-today-bg: #fef0f0;
+  --app-review-today-text: #f56c6c;
+  --app-review-done-bg: #f0f9eb;
+  --app-review-done-text: #67c23a;
+}
+
+/* 深色皮肤（系统默认） */
+html[data-theme='dark'] {
+  --app-bg: #0d1117;
+  --app-surface: #161b22;
+  --app-surface-muted: #21262d;
+  --app-text-primary: #e6edf3;
+  --app-text-secondary: #8b949e;
+  --app-text-muted: #6e7681;
+  --app-border: #30363d;
+  --app-sidebar-bg: #010409;
+  --app-sidebar-text: #e6edf3;
+  --app-sidebar-hover: #21262d;
+  --app-sidebar-active: var(--el-color-primary);
+  --app-header-bg: #161b22;
+  --app-auth-brand-bg: #010409;
+  --app-auth-brand-text: #e6edf3;
+  --app-auth-brand-subtext: #8b949e;
+  --app-card-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  --app-review-today-bg: rgba(245, 108, 108, 0.15);
+  --app-review-today-text: #ff7b72;
+  --app-review-done-bg: rgba(103, 194, 58, 0.15);
+  --app-review-done-text: #3fb950;
+}
+
+body {
+  background-color: var(--app-bg);
+  color: var(--app-text-primary);
+  transition: background-color 0.25s ease, color 0.25s ease;
+}
+
+.page-panel {
+  padding: 20px;
+  background: var(--app-surface);
+  border-radius: 8px;
+  border: 1px solid var(--app-border);
+}
+
+.page-panel__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding: 16px;
+  background-color: var(--app-surface-muted);
+  border-radius: 8px;
+  border: 1px solid var(--app-border);
+}

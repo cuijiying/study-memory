@@ -1,5 +1,5 @@
 <template>
-  <div class="learning-type-view">
+  <div class="learning-type-view page-panel">
     <div class="mb-4 flex justify-between items-center">
       <el-button type="primary" @click="showCreateDialog">添加学习类型</el-button>
     </div>
@@ -156,9 +156,6 @@ const handleDelete = async (row: LearningType) => {
 </script> 
 <style scoped>
 .learning-type-view {
-  padding: 20px;
-  background: #fff;
-  border-radius: 8px;
   .table-container {
     margin-top: 20px;
   }
