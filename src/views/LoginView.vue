@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import type { FormInstance, FormRules} from 'element-plus'
+import type { FormInstance, FormRules } from 'element-plus'
 import { User, Lock } from '@element-plus/icons-vue'
-import { supabase } from '../lib/supabase'
+import { supabase } from '@/lib/supabase'
 
 const router = useRouter()
 const loading = ref(false)
@@ -27,7 +27,7 @@ const loginFormRef = ref<FormInstance>()
 const handleLogin = async (formEl: FormInstance | undefined) => {
   if (!formEl) return
   loading.value = true
-  
+
   try {
     await formEl.validate(async (valid: boolean) => {
       if (valid) {
@@ -63,30 +63,14 @@ const goToRegister = () => {
 
 <template>
   <div class="login-container">
-    <div class="cyberpunk-background">
-      <div class="grid"></div>
-      <div class="circles">
-        <div></div>
-        <div></div>
-        <div></div>
-      </div>
-    </div>
     <div class="login-content">
       <div class="login-header">
-        <div class="logo-container">
-          <img src="@/assets/images/logo.svg" alt="Logo" class="logo">
-          <div class="logo-glow"></div>
-        </div>
+        <img src="@/assets/images/logo.svg" alt="Logo" class="logo">
         <h2>艾宾浩斯记忆学习系统</h2>
         <p class="subtitle">记录每一步学习的进步</p>
-
       </div>
-      
+
       <el-card class="login-card">
-        <div class="card-decoration">
-          <span></span>
-          <span></span>
-        </div>
         <el-form
           ref="loginFormRef"
           :model="loginForm"
@@ -95,38 +79,34 @@ const goToRegister = () => {
           class="login-form"
         >
           <el-form-item label="用户名" prop="username">
-            <el-input 
-              v-model="loginForm.username" 
+            <el-input
+              v-model="loginForm.username"
               placeholder="请输入用户名"
               :prefix-icon="User"
-              class="cyber-input"
             />
           </el-form-item>
           <el-form-item label="密码" prop="password">
-            <el-input 
-              v-model="loginForm.password" 
-              type="password" 
+            <el-input
+              v-model="loginForm.password"
+              type="password"
               placeholder="请输入密码"
               :prefix-icon="Lock"
               show-password
-              class="cyber-input"
             />
           </el-form-item>
-          <el-form-item class="remember-forgot">
-            <el-checkbox class="cyber-checkbox">记住我</el-checkbox>
-            <!-- <el-link type="primary" class="forgot-link">忘记密码？</el-link> -->
-            <el-button 
-              type="primary" 
-              @click="handleLogin(loginFormRef)" 
-              class="login-button"
+          <el-form-item class="form-actions">
+            <el-checkbox>记住我</el-checkbox>
+            <el-button
+              type="primary"
+              @click="handleLogin(loginFormRef)"
               :loading="loading"
             >
-              <span class="button-content">登录</span>
+              登录
             </el-button>
           </el-form-item>
           <div class="register-link">
             还没有账号？
-            <el-link type="primary" @click="goToRegister" class="register-button">立即注册</el-link>
+            <el-link type="primary" @click="goToRegister">立即注册</el-link>
           </div>
         </el-form>
       </el-card>
@@ -140,278 +120,57 @@ const goToRegister = () => {
   display: flex;
   justify-content: center;
   align-items: center;
-  background: #0a0a1f;
-  position: relative;
-  overflow: hidden;
-  
-  .cyberpunk-background {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    z-index: 0;
-    
-    .grid {
-      position: absolute;
-      width: 200%;
-      height: 200%;
-      background-image: 
-        linear-gradient(transparent 95%, rgba(64, 158, 255, 0.3) 95%),
-        linear-gradient(90deg, transparent 95%, rgba(64, 158, 255, 0.3) 95%);
-      background-size: 40px 40px;
-      animation: gridMove 20s linear infinite;
-      transform: perspective(500px) rotateX(60deg);
-      top: -100%;
-    }
+  background: #f0f2f5;
+}
 
-    .circles {
-      position: absolute;
-      width: 100%;
-      height: 100%;
-      
-      div {
-        position: absolute;
-        border: 2px solid rgba(64, 158, 255, 0.2);
-        border-radius: 50%;
-        animation: circleFloat 10s infinite;
-        
-        &:nth-child(1) {
-          width: 200px;
-          height: 200px;
-          left: 10%;
-          top: 20%;
-          animation-delay: 0s;
-        }
-        
-        &:nth-child(2) {
-          width: 300px;
-          height: 300px;
-          right: 15%;
-          bottom: 25%;
-          animation-delay: -3s;
-        }
-        
-        &:nth-child(3) {
-          width: 150px;
-          height: 150px;
-          right: 30%;
-          top: 30%;
-          animation-delay: -6s;
-        }
-      }
-    }
+.login-content {
+  width: 100%;
+  max-width: 440px;
+  padding: 0 20px;
+}
+
+.login-header {
+  text-align: center;
+  margin-bottom: 32px;
+
+  .logo {
+    width: 64px;
+    height: 64px;
+    margin-bottom: 16px;
   }
 
-  .login-content {
-    width: 100%;
-    max-width: 440px;
-    padding: 0 20px;
-    position: relative;
-    z-index: 1;
-    animation: fadeIn 0.8s cubic-bezier(0.16, 1, 0.3, 1);
-    
-    .login-header {
-      text-align: center;
-      margin-bottom: 32px;
-      
-      .logo-container {
-        position: relative;
-        display: inline-block;
-        margin-bottom: 20px;
-        
-        .logo {
-          width: 80px;
-          height: 80px;
-          position: relative;
-          z-index: 2;
-          filter: drop-shadow(0 0 8px rgba(64, 158, 255, 0.6));
-        }
-        
-        .logo-glow {
-          position: absolute;
-          top: 50%;
-          left: 50%;
-          transform: translate(-50%, -50%);
-          width: 100px;
-          height: 100px;
-          background: radial-gradient(circle, rgba(64, 158, 255, 0.4) 0%, transparent 70%);
-          animation: glowPulse 2s infinite;
-        }
-      }
-      
-      h2 {
-        color: #fff;
-        font-size: 32px;
-        font-weight: 600;
-        margin-bottom: 12px;
-        text-shadow: 0 0 20px rgba(64, 158, 255, 0.5);
-      }
-      
-      .subtitle {
-        color: rgba(255, 255, 255, 0.9);
-        font-size: 18px;
-        text-shadow: 0 0 10px rgba(64, 158, 255, 0.3);
-      }
-    }
+  h2 {
+    font-size: 24px;
+    font-weight: 600;
+    color: #303133;
+    margin-bottom: 8px;
+  }
 
-    .login-card {
-      backdrop-filter: blur(20px);
-      background: rgba(255, 255, 255, 0.1);
-      border: 1px solid rgba(255, 255, 255, 0.2);
-      border-radius: 16px;
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-      position: relative;
-      overflow: hidden;
-      
-      .card-decoration {
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        pointer-events: none;
-        
-        span {
-          position: absolute;
-          background: linear-gradient(90deg, transparent, rgba(64, 158, 255, 0.2), transparent);
-          width: 50%;
-          height: 2px;
-          animation: decorationMove 3s linear infinite;
-          
-          &:nth-child(1) {
-            top: 20%;
-            transform: translateX(-100%);
-          }
-          
-          &:nth-child(2) {
-            bottom: 20%;
-            transform: translateX(100%);
-            animation-delay: -1.5s;
-          }
-        }
-      }
-      
-      .login-form {
-        padding: 30px 20px;
-        
-        :deep(.el-input__wrapper) {
-          background: rgba(255, 255, 255, 0.05);
-          border: 1px solid rgba(64, 158, 255, 0.3);
-          box-shadow: none;
-          border-radius: 8px;
-          transition: all 0.3s;
-          
-          &:hover {
-            border-color: rgba(64, 158, 255, 0.5);
-            box-shadow: 0 0 15px rgba(64, 158, 255, 0.2);
-          }
-          
-          &.is-focus {
-            border-color: #409EFF;
-            box-shadow: 0 0 20px rgba(64, 158, 255, 0.3);
-          }
-
-          .el-input__inner {
-            color: #fff;
-            
-            &::placeholder {
-              color: rgba(255, 255, 255, 0.5);
-            }
-          }
-        }
-        
-        .remember-forgot {
-          :deep(.el-checkbox__label) {
-            color: rgba(255, 255, 255, 0.9);
-          }
-          .el-button {
-            width: 30%;
-            margin-left: auto;
-            margin-top: 10px;
-            margin-bottom: 10px;
-            .button-content {
-              width: 100%;
-              text-align: center;
-            }
-          }
-        }
-
-        .register-link {
-          text-align: center;
-          margin-top: 20px;
-          color: rgba(255, 255, 255, 0.9);
-          
-          .register-button {
-            color: #409EFF;
-            font-weight: 500;
-            margin-left: 8px;
-            
-            &:hover {
-              text-shadow: 0 0 8px rgba(64, 158, 255, 0.6);
-            }
-          }
-        }
-      }
-    }
+  .subtitle {
+    color: #909399;
+    font-size: 14px;
   }
 }
 
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(30px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+.login-card {
+  border-radius: 8px;
 }
 
-@keyframes gridMove {
-  0% {
-    transform: perspective(500px) rotateX(60deg) translateY(0);
-  }
-  100% {
-    transform: perspective(500px) rotateX(60deg) translateY(40px);
-  }
-}
+.login-form {
+  padding: 8px 4px;
 
-@keyframes circleFloat {
-  0%, 100% {
-    transform: translateY(0);
+  .form-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0;
   }
-  50% {
-    transform: translateY(-20px);
-  }
-}
 
-@keyframes glowPulse {
-  0%, 100% {
-    opacity: 0.4;
-    transform: translate(-50%, -50%) scale(1);
-  }
-  50% {
-    opacity: 0.6;
-    transform: translate(-50%, -50%) scale(1.5);
+  .register-link {
+    text-align: center;
+    margin-top: 16px;
+    color: #606266;
+    font-size: 14px;
   }
 }
-
-@keyframes decorationMove {
-  0% {
-    transform: translateX(-100%);
-  }
-  100% {
-    transform: translateX(200%);
-  }
-}
-
-@keyframes buttonGlitch {
-  0% {
-    left: -100%;
-  }
-  100% {
-    left: 200%;
-  }
-}
-</style> 
+</style>

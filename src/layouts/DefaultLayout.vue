@@ -5,19 +5,19 @@ import {
   Document,
   DataAnalysis,
   Setting,
-  Bell,
   Fold,
   Expand,
   User,
   CaretBottom,
-  SwitchButton
+  SwitchButton,
 } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
-import { supabase } from '@/lib/supabase'
-import WeatherWidget from '@/components/WeatherWidget.vue'
+import { useAuthStore } from '@/stores/auth'
 
 const router = useRouter()
 const route = useRoute()
+const authStore = useAuthStore()
+const { user } = storeToRefs(authStore)
 const isCollapse = ref(false)
 const showProfileDialog = ref(false)
 
@@ -38,14 +38,14 @@ const menuItems = computed(() => {
 
 // 获取菜单图标
 const getMenuIcon = (path: string) => {
-  const menuIcons: Record<string, any> = {
+  const menuIcons: Record<string, typeof Document> = {
     '/': HomeFilled,
     '/study-plan': Calendar,
     '/study-notes': Document,
     '/study-statistics': DataAnalysis,
     '/system-settings': Setting,
     '/learning-types': Document,
-    '/issues': Document
+    '/issues': Document,
   }
   return menuIcons[path] || Document
 }
@@ -71,11 +71,7 @@ const handleCommand = (command: string) => {
 
 const handleLogout = async () => {
   try {
-    const { error } = await supabase.auth.signOut()
-    if (error) {
-      ElMessage.error('退出失败，请重试')
-      return
-    }
+    await authStore.signOut()
     ElMessage.success('已成功退出')
     router.push('/login')
   } catch (error) {
@@ -91,29 +87,9 @@ const activeIndex = computed(() => {
   return menuItem?.index || '1'
 })
 
-// 获取用户名
-const user = ref({
-  username: 'guest',
-  email: '',
-  created_at: '',
-  last_sign_in_at: ''
-})
-
-// 获取用户名
-const getUsername = async () => {
-  const { data, error } = await supabase.auth.getUser()
-  if (error) {
-    console.error('Error fetching user:', error)
-  }
-  user.value.username = data.user?.email || 'guest'
-  user.value.email = data.user?.email || ''
-  user.value.created_at = data.user?.created_at || ''
-  user.value.last_sign_in_at = data.user?.last_sign_in_at || ''
-}
-
-onMounted(() => {
-  getUsername()
-})
+const userEmail = computed(() => user.value?.email || 'guest')
+const userCreatedAt = computed(() => user.value?.created_at || '')
+const userLastSignInAt = computed(() => user.value?.last_sign_in_at || '')
 
 </script>
 <template>
@@ -162,21 +138,13 @@ onMounted(() => {
         </div>
         
         <div class="header-right">
-          <el-space>
-            <WeatherWidget />
-            <!-- <el-button class="icon-btn">
-              <el-badge :value="3">
-                <el-icon><Bell /></el-icon>
-              </el-badge>
-            </el-button> -->
-            
-            <el-dropdown @command="handleCommand">
+          <el-dropdown @command="handleCommand">
               <div class="user-info">
                 <el-avatar :size="32" src="https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png" />
                 <!-- 获取用户名 -->
-                <span class="username">{{ user.username }}</span>
+                <span class="username">{{ userEmail }}</span>
                 <el-icon><CaretBottom /></el-icon>
-              </div>0
+              </div>
 
               <template #dropdown>
                 <el-dropdown-menu>
@@ -193,7 +161,6 @@ onMounted(() => {
                 </el-dropdown-menu>
               </template>
             </el-dropdown>
-          </el-space>
         </div>
       </el-header>
       
@@ -213,16 +180,16 @@ onMounted(() => {
       >
         <el-descriptions :column="1" border>
           <el-descriptions-item label="用户名">
-            {{ user.username }}
+            {{ userEmail }}
           </el-descriptions-item>
           <el-descriptions-item label="邮箱">
-            {{ user.email }}
+            {{ userEmail }}
           </el-descriptions-item>
           <el-descriptions-item label="注册时间">
-            {{ new Date(user.created_at).toLocaleString() }}
+            {{ userCreatedAt ? new Date(userCreatedAt).toLocaleString() : '-' }}
           </el-descriptions-item>
           <el-descriptions-item label="最后登录时间">
-            {{ new Date(user.last_sign_in_at).toLocaleString() }}
+            {{ userLastSignInAt ? new Date(userLastSignInAt).toLocaleString() : '-' }}
           </el-descriptions-item>
         </el-descriptions>
         <template #footer>

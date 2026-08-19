@@ -8,6 +8,7 @@ export interface StudyRecord {
   updated_at: string
   learning_type_id: number | undefined
   learning_type?: LearningType
+  name?: string
   review1_time?: string
   review2_time?: string
   review3_time?: string

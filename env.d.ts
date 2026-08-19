@@ -1,7 +1,14 @@
 /// <reference types="vite/client" />
 /// <reference types="element-plus/global" />
 
-// declare module 'element-plus'
+interface ImportMetaEnv {
+  readonly VITE_SUPABASE_URL: string
+  readonly VITE_SUPABASE_PUBLISHABLE_KEY: string
+}
+
+interface ImportMeta {
+  readonly env: ImportMetaEnv
+}
 declare module '@element-plus/icons-vue' {
   export const HomeFilled: any
   export const Calendar: any
@@ -18,5 +25,4 @@ declare module '@element-plus/icons-vue' {
   export const Timer: any
   export const Check: any
   export const List: any
-  export const TrendCharts: any
 }

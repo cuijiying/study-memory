@@ -1,8 +1,12 @@
 <script setup lang="ts">
 import type { StudyPlan } from '@/types'
-
-import { supabase } from '@/lib/supabase'
+import { useAuthUser } from '@/composables/useAuthUser'
+import { studyPlanService } from '@/services/studyPlanService'
 import { useLearningTypeStore } from '@/stores/learningType'
+
+const { requireUserId } = useAuthUser()
+const learningTypeStore = useLearningTypeStore()
+const { learningTypes } = storeToRefs(learningTypeStore)
 
 const loading = ref(false)
 const showCreateDialog = ref(false)
@@ -13,103 +17,75 @@ const currentPage = ref(1)
 const pageSize = ref(10)
 const total = ref(0)
 
-// 引入学习类型 store
-const learningTypeStore = useLearningTypeStore()
-const { learningTypes } = storeToRefs(learningTypeStore)
+type TagType = 'success' | 'warning' | 'info' | 'primary' | 'danger'
 
 const newPlan = ref({
   title: '',
   description: '',
-  start_time: null as string | null,
-  end_time: null as string | null,
+  start_time: undefined as string | undefined,
+  end_time: undefined as string | undefined,
   status: 'pending' as const,
   priority: 'medium' as const,
-  learning_type_id: undefined as number | undefined
+  learning_type_id: undefined as number | undefined,
 })
+
+const formRules = {
+  title: [{ required: true, message: '请输入标题', trigger: 'blur' }],
+  learning_type_id: [{ required: true, message: '请选择学习类型', trigger: 'change' }],
+}
 
 const fetchStudyPlans = async () => {
   loading.value = true
   try {
-    const userId = (await supabase.auth.getUser()).data.user?.id
-    if (!userId) {
-      ElMessage.error('用户未登录')
-      return
-    }
-
-    // Get total count
-    const countResult = await supabase
-      .from('study_plan')
-      .select('*', { count: 'exact', head: true })
-      .eq('user_id', userId)
-    
-    if (countResult.error) throw countResult.error
-    total.value = countResult.count || 0
-
-    // Get paginated data with learning type
-    const { data, error } = await supabase
-      .from('study_plan_types') // 视图
-      .select(`
-        *
-      `)
-      .eq('user_id', userId)
-      // .eq('study_plan.learning_type_id', 'learning_types.id') // 手动指定连接条件
-      .order('created_at', { ascending: false })
-      .range((currentPage.value - 1) * pageSize.value, currentPage.value * pageSize.value - 1)
-    if (error) throw error
+    const userId = requireUserId()
+    const { data, total: totalCount } = await studyPlanService.list(userId, {
+      page: currentPage.value,
+      pageSize: pageSize.value,
+    })
     studyPlans.value = data
+    total.value = totalCount
   } catch (error) {
-    ElMessage.error('获取学习计划列表失败')
-    console.error(error)
+    if ((error as Error).message !== 'NOT_AUTHENTICATED') {
+      ElMessage.error('获取学习计划列表失败')
+      console.error(error)
+    }
   } finally {
     loading.value = false
   }
 }
 
-onMounted(async () => {
-  await learningTypeStore.fetchLearningTypes()
-  fetchStudyPlans()
-})
-
 const handleCreate = async () => {
   try {
-    const userId = (await supabase.auth.getUser()).data.user?.id
-    if (!userId) {
-      ElMessage.error('用户未登录')
-      return
-    }
-
-    const { error } = await supabase
-      .from('study_plan')
-      .insert([{ ...newPlan.value, user_id: userId }])
-    
-    if (error) throw error
-    
+    const userId = requireUserId()
+    await studyPlanService.create(userId, {
+      title: newPlan.value.title,
+      description: newPlan.value.description,
+      start_time: newPlan.value.start_time || '',
+      end_time: newPlan.value.end_time || '',
+      status: newPlan.value.status,
+      priority: newPlan.value.priority,
+      learning_type_id: newPlan.value.learning_type_id!,
+    })
     showCreateDialog.value = false
     ElMessage.success('学习计划创建成功')
     resetForm()
-    currentPage.value = 1 // Reset to first page after creating
-    fetchStudyPlans()
+    currentPage.value = 1
+    await fetchStudyPlans()
   } catch (error) {
-    ElMessage.error('学习计划创建失败')
-    console.error(error)
+    if ((error as Error).message !== 'NOT_AUTHENTICATED') {
+      ElMessage.error('学习计划创建失败')
+      console.error(error)
+    }
   }
 }
 
 const handleEdit = async () => {
   if (!selectedPlan.value) return
   try {
-    // 从selectedPlan中排除name
-    const { name, id, created_at, updated_at, learning_type, ...updates } = selectedPlan.value
-    const { error } = await supabase
-      .from('study_plan')
-      .update(updates)
-      .eq('id', id)
-    
-    if (error) throw error
-    
+    await studyPlanService.update(selectedPlan.value.id, selectedPlan.value)
     showEditDialog.value = false
     ElMessage.success('学习计划更新成功')
-    fetchStudyPlans()
+    await fetchStudyPlans()
   } catch (error) {
     ElMessage.error('学习计划更新失败')
     console.error(error)
@@ -117,40 +93,35 @@ const handleEdit = async () => {
 }
 
 const handleDelete = async (id: number) => {
-  //确认 是否删除
-  ElMessageBox.confirm('确定删除该学习计划吗？', '提示', {
+  try {
+    await ElMessageBox.confirm('确定删除该学习计划吗？', '提示', {
       confirmButtonText: '确定',
       cancelButtonText: '取消',
-      type: 'warning'
-    }).then(async () => {
-  try {
-    const { error } = await supabase
-      .from('study_plan')
-      .delete()
-      .eq('id', id)
-    if (error) throw error
-    
+      type: 'warning',
+    })
+    await studyPlanService.remove(id)
     ElMessage.success('学习计划删除成功')
     if (studyPlans.value.length === 1 && currentPage.value > 1) {
-      currentPage.value-- // Go to previous page if current page becomes empty
+      currentPage.value--
     }
-    fetchStudyPlans()
+    await fetchStudyPlans()
   } catch (error) {
-    ElMessage.error('学习计划删除失败')
-    console.error(error)
+    if (error !== 'cancel') {
+      ElMessage.error('学习计划删除失败')
+      console.error(error)
+    }
   }
-  })
 }
 
 const resetForm = () => {
   newPlan.value = {
     title: '',
     description: '',
-    start_time: null,
-    end_time: null,
+    start_time: undefined,
+    end_time: undefined,
     status: 'pending',
     priority: 'medium',
-    learning_type_id: undefined
+    learning_type_id: undefined,
   }
 }
 
@@ -159,27 +130,23 @@ const editPlan = (plan: StudyPlan) => {
   showEditDialog.value = true
 }
 
-const getPriorityType = (priority: string) => {
-  const types = {
-    high: 'danger',
-    medium: 'warning',
-    low: 'info'
-  }
-  return types[priority as keyof typeof types] || 'info'
+const getPriorityType = (priority: string): TagType => {
+  const types: Record<string, TagType> = { high: 'danger', medium: 'warning', low: 'info' }
+  return types[priority] || 'info'
 }
 
-const getStatusType = (status: string) => {
-  const types = {
+const getStatusType = (status: string): TagType => {
+  const types: Record<string, TagType> = {
     pending: 'info',
     in_progress: 'warning',
-    completed: 'success'
+    completed: 'success',
   }
-  return types[status as keyof typeof types] || 'info'
+  return types[status] || 'info'
 }
 
-// Add pagination handlers
 const handleSizeChange = (val: number) => {
   pageSize.value = val
+  currentPage.value = 1
   fetchStudyPlans()
 }
 
@@ -187,22 +154,23 @@ const handleCurrentChange = (val: number) => {
   currentPage.value = val
   fetchStudyPlans()
 }
+
+onMounted(async () => {
+  await learningTypeStore.fetchLearningTypes()
+  await fetchStudyPlans()
+})
 </script>
 
 <template>
   <div class="study-plan-view">
     <div class="header">
-      <el-button type="primary" @click="showCreateDialog = true">
-        新增学习计划
-      </el-button>
+      <el-button type="primary" @click="showCreateDialog = true">新增学习计划</el-button>
     </div>
 
     <el-table v-loading="loading" :data="studyPlans" style="width: 100%" border stripe>
       <el-table-column prop="title" label="标题" align="center" />
       <el-table-column label="学习类型" align="center" width="120">
-        <template #default="{ row }">
-          {{ row?.name }}
-        </template>
+        <template #default="{ row }">{{ row.name }}</template>
       </el-table-column>
       <el-table-column prop="description" label="描述" show-overflow-tooltip align="center" />
       <el-table-column prop="start_time" label="开始时间" align="center">
@@ -229,16 +197,10 @@ const handleCurrentChange = (val: number) => {
           </el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="操作" width="200" align="center">
+      <el-table-column label="操作" width="140" align="center">
         <template #default="{ row }">
-          <el-button-group>
-            <el-button type="primary" @click="editPlan(row)" link>
-              <el-icon><Edit /></el-icon>
-            </el-button>
-            <el-button type="danger" @click="handleDelete(row.id)" link>
-              <el-icon><Delete /></el-icon>
-            </el-button>
-          </el-button-group>
+          <el-button link type="primary" @click="editPlan(row)">编辑</el-button>
+          <el-button link type="danger" @click="handleDelete(row.id)">删除</el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -255,60 +217,25 @@ const handleCurrentChange = (val: number) => {
       />
     </div>
 
-    <!-- Create Dialog -->
-    <el-dialog
-      v-model="showCreateDialog"
-      title="新增学习计划"
-      width="50%"
-    >
-      <el-form
-        ref="formRef"
-        :model="newPlan"
-        label-width="120px"
-        :rules="{
-          title: [{ required: true, message: '请输入标题', trigger: 'blur' }],
-          learning_type_id: [{ required: true, message: '请选择学习类型', trigger: 'change' }]
-        }"
-      >
-        <el-form-item label="标题" required>
+    <el-dialog v-model="showCreateDialog" title="新增学习计划" width="50%">
+      <el-form :model="newPlan" label-width="120px" :rules="formRules">
+        <el-form-item label="标题" prop="title" required>
           <el-input v-model="newPlan.title" placeholder="请输入标题" />
         </el-form-item>
-
-        <el-form-item label="学习类型" required>
+        <el-form-item label="学习类型" prop="learning_type_id" required>
           <el-select v-model="newPlan.learning_type_id" placeholder="请选择学习类型">
-            <el-option
-              v-for="type in learningTypes"
-              :key="type.id"
-              :label="type.name"
-              :value="type.id"
-            />
+            <el-option v-for="type in learningTypes" :key="type.id" :label="type.name" :value="type.id" />
           </el-select>
         </el-form-item>
-
         <el-form-item label="描述">
-          <el-input
-            v-model="newPlan.description"
-            type="textarea"
-            placeholder="请输入描述"
-          />
+          <el-input v-model="newPlan.description" type="textarea" placeholder="请输入描述" />
         </el-form-item>
-
         <el-form-item label="开始时间">
-          <el-date-picker
-            v-model="newPlan.start_time"
-            type="datetime"
-            placeholder="选择开始时间"
-          />
+          <el-date-picker v-model="newPlan.start_time" type="datetime" placeholder="选择开始时间" />
         </el-form-item>
-
         <el-form-item label="结束时间">
-          <el-date-picker
-            v-model="newPlan.end_time"
-            type="datetime"
-            placeholder="选择结束时间"
-          />
+          <el-date-picker v-model="newPlan.end_time" type="datetime" placeholder="选择结束时间" />
         </el-form-item>
-
         <el-form-item label="优先级">
           <el-select v-model="newPlan.priority">
             <el-option label="高" value="high" />
@@ -316,7 +243,6 @@ const handleCurrentChange = (val: number) => {
             <el-option label="低" value="low" />
           </el-select>
         </el-form-item>
-
         <el-form-item label="状态">
           <el-select v-model="newPlan.status">
             <el-option label="待完成" value="pending" />
@@ -325,69 +251,31 @@ const handleCurrentChange = (val: number) => {
           </el-select>
         </el-form-item>
       </el-form>
-
       <template #footer>
-        <span class="dialog-footer">
-          <el-button @click="showCreateDialog = false">取消</el-button>
-          <el-button type="primary" @click="handleCreate">确定</el-button>
-        </span>
+        <el-button @click="showCreateDialog = false">取消</el-button>
+        <el-button type="primary" @click="handleCreate">确定</el-button>
       </template>
     </el-dialog>
 
-    <!-- Edit Dialog -->
-    <el-dialog
-      v-model="showEditDialog"
-      title="编辑学习计划"
-      width="50%"
-    >
-      <el-form
-        ref="editFormRef"
-        :model="selectedPlan"
-        label-width="120px"
-        :rules="{
-          title: [{ required: true, message: '请输入标题', trigger: 'blur' }],
-          learning_type_id: [{ required: true, message: '请选择学习类型', trigger: 'change' }]
-        }"
-      >
-        <el-form-item label="标题" required>
+    <el-dialog v-model="showEditDialog" title="编辑学习计划" width="50%">
+      <el-form v-if="selectedPlan" :model="selectedPlan" label-width="120px" :rules="formRules">
+        <el-form-item label="标题" prop="title" required>
           <el-input v-model="selectedPlan.title" placeholder="请输入标题" />
         </el-form-item>
-
-        <el-form-item label="学习类型" required>
+        <el-form-item label="学习类型" prop="learning_type_id" required>
           <el-select v-model="selectedPlan.learning_type_id" placeholder="请选择学习类型">
-            <el-option
-              v-for="type in learningTypes"
-              :key="type.id"
-              :label="type.name"
-              :value="type.id"
-            />
+            <el-option v-for="type in learningTypes" :key="type.id" :label="type.name" :value="type.id" />
           </el-select>
         </el-form-item>
-
         <el-form-item label="描述">
-          <el-input
-            v-model="selectedPlan.description"
-            type="textarea"
-            placeholder="请输入描述"
-          />
+          <el-input v-model="selectedPlan.description" type="textarea" placeholder="请输入描述" />
         </el-form-item>
-
         <el-form-item label="开始时间">
-          <el-date-picker
-            v-model="selectedPlan.start_time"
-            type="datetime"
-            placeholder="选择开始时间"
-          />
+          <el-date-picker v-model="selectedPlan.start_time" type="datetime" placeholder="选择开始时间" />
         </el-form-item>
-
         <el-form-item label="结束时间">
-          <el-date-picker
-            v-model="selectedPlan.end_time"
-            type="datetime"
-            placeholder="选择结束时间"
-          />
+          <el-date-picker v-model="selectedPlan.end_time" type="datetime" placeholder="选择结束时间" />
         </el-form-item>
-
         <el-form-item label="优先级">
           <el-select v-model="selectedPlan.priority">
             <el-option label="高" value="high" />
@@ -395,7 +283,6 @@ const handleCurrentChange = (val: number) => {
             <el-option label="低" value="low" />
           </el-select>
         </el-form-item>
-
         <el-form-item label="状态">
           <el-select v-model="selectedPlan.status">
             <el-option label="待完成" value="pending" />
@@ -404,12 +291,9 @@ const handleCurrentChange = (val: number) => {
           </el-select>
         </el-form-item>
       </el-form>
-
       <template #footer>
-        <span class="dialog-footer">
-          <el-button @click="showEditDialog = false">取消</el-button>
-          <el-button type="primary" @click="handleEdit">确定</el-button>
-        </span>
+        <el-button @click="showEditDialog = false">取消</el-button>
+        <el-button type="primary" @click="handleEdit">确定</el-button>
       </template>
     </el-dialog>
   </div>
@@ -420,17 +304,15 @@ const handleCurrentChange = (val: number) => {
   padding: 20px;
   background: #fff;
   border-radius: 8px;
+
   .header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
     margin-bottom: 20px;
   }
+
   .pagination-container {
     margin-top: 20px;
     display: flex;
     justify-content: flex-end;
   }
 }
-
 </style>

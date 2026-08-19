@@ -8,21 +8,20 @@ import Components from 'unplugin-vue-components/vite'
 import { ElementPlusResolver } from 'unplugin-vue-components/resolvers'
 
 // https://vitejs.dev/config/
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
   plugins: [
     vue(),
-    vueDevTools(),
+    mode === 'development' && vueDevTools(),
     AutoImport({
-      // 自动导入 Vue 相关函数，如：ref, reactive, computed 等
       imports: ['vue', 'vue-router', 'pinia'],
-      // 生成自动导入的 TypeScript 声明文件
       dts: 'src/auto-imports.d.ts',
-      resolvers: [ElementPlusResolver()],
+      resolvers: [ElementPlusResolver({ importStyle: 'sass' })],
     }),
     Components({
-      resolvers: [ElementPlusResolver()],
+      dts: 'components.d.ts',
+      resolvers: [ElementPlusResolver({ importStyle: 'sass' })],
     }),
-  ],
+  ].filter(Boolean),
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url))
@@ -39,11 +38,15 @@ export default defineConfig({
     port: 8888,
     open: true,
     host: '0.0.0.0',
-    proxy: {
-      '/api': {
-        target: 'https://api.tushare.pro',
-        rewrite: (path) => path.replace(/^\/api/, '')
-      }
-    }
-  }
-})
+  },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'element-plus': ['element-plus'],
+          supabase: ['@supabase/supabase-js'],
+        },
+      },
+    },
+  },
+}))

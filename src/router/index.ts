@@ -1,5 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import { supabase } from '@/lib/supabase'
+import { useAuthStore } from '@/stores/auth'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -57,25 +57,24 @@ const router = createRouter({
           name: 'issue-detail',
           component: () => import('../views/IssueDetailView.vue'),
           meta: { requiresAuth: true, title: '问题详情', hideInMenu: true }
-        },
-        {
-          path: 'stock-market',
-          name: 'stock-market',
-          component: () => import('../views/StockMarketView.vue'),
-          meta: { requiresAuth: true, title: 'market' }
         }
       ]
     }
   ]
 })
 
-router.beforeEach(async (to, from, next) => {
-  const { data: { user } } = await supabase.auth.getUser()
+router.beforeEach(async (to, _from, next) => {
+  const authStore = useAuthStore()
+
+  if (!authStore.initialized) {
+    await authStore.initialize()
+  }
+
   const requiresAuth = to.matched.some(record => record.meta.requiresAuth)
 
-  if (requiresAuth && !user) {
+  if (requiresAuth && !authStore.user) {
     next('/login')
-  } else if ((to.path === '/login' || to.path === '/register') && user) {
+  } else if ((to.path === '/login' || to.path === '/register') && authStore.user) {
     next('/')
   } else {
     next()

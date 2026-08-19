@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { User, Lock} from '@element-plus/icons-vue'
-import { supabase } from '../lib/supabase'
+import type { FormInstance, FormRules } from 'element-plus'
+import { User, Lock } from '@element-plus/icons-vue'
+import { supabase } from '@/lib/supabase'
 
 const router = useRouter()
 const loading = ref(false)
@@ -105,7 +106,6 @@ const goToLogin = () => {
             <el-input 
               v-model="registerForm.email" 
               placeholder="请输入邮箱"
-              :prefix-icon="Message"
             ></el-input>
           </el-form-item>
           <el-form-item label="用户名" prop="username">
