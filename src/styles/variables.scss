@@ -9,8 +9,11 @@ $info-color: #909399;
 $header-height: 60px;
 $sidebar-width: 200px;
 
-// Breakpoints
-$sm: 768px;
-$md: 992px;
-$lg: 1200px;
+/**
+ * 响应式断点 — 与 src/composables/useBreakpoint.ts 中 BREAKPOINTS 保持一致
+ * 修改时请同步更新 theme.css 中的 @media 查询
+ */
+$sm: 768px;   // 手机端上限（不含）
+$md: 992px;   // 平板端上限（不含）
+$lg: 1200px;  // 桌面宽屏
 $xl: 1920px; 

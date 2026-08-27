@@ -1,10 +1,15 @@
 <script setup lang="ts">
 import type { StudyPlan } from '@/types'
 import { useAuthUser } from '@/composables/useAuthUser'
+import { useBreakpoint } from '@/composables/useBreakpoint'
+import { usePaginationLayout, useResponsiveDialog } from '@/composables/useResponsiveDialog'
 import { studyPlanService } from '@/services/studyPlanService'
 import { useLearningTypeStore } from '@/stores/learningType'
 
 const { requireUserId } = useAuthUser()
+const { isMobile } = useBreakpoint()
+const { paginationLayout } = usePaginationLayout()
+const { dialogWidth } = useResponsiveDialog('50%')
 const learningTypeStore = useLearningTypeStore()
 const { learningTypes } = storeToRefs(learningTypeStore)
 
@@ -144,6 +149,14 @@ const getStatusType = (status: string): TagType => {
   return types[status] || 'info'
 }
 
+/** 优先级中文映射 */
+const getPriorityLabel = (priority: string) =>
+  priority === 'high' ? '高' : priority === 'medium' ? '中' : '低'
+
+/** 状态中文映射 */
+const getStatusLabel = (status: string) =>
+  status === 'pending' ? '待完成' : status === 'in_progress' ? '进行中' : '已完成'
+
 const handleSizeChange = (val: number) => {
   pageSize.value = val
   currentPage.value = 1
@@ -155,6 +168,10 @@ const handleCurrentChange = (val: number) => {
   fetchStudyPlans()
 }
 
+/** 表单 label 宽度：手机端顶部对齐，桌面端右侧对齐 */
+const formLabelWidth = computed(() => (isMobile.value ? undefined : '120px'))
+const formLabelPosition = computed(() => (isMobile.value ? 'top' : 'right'))
+
 onMounted(async () => {
   await learningTypeStore.fetchLearningTypes()
   await fetchStudyPlans()
@@ -163,11 +180,14 @@ onMounted(async () => {
 
 <template>
   <div class="study-plan-view page-panel">
-    <div class="header">
-      <el-button type="primary" @click="showCreateDialog = true">新增学习计划</el-button>
+    <div class="header page-panel__header">
+      <el-button type="primary" class="btn-block-mobile" @click="showCreateDialog = true">
+        新增学习计划
+      </el-button>
     </div>
 
-    <el-table v-loading="loading" :data="studyPlans" style="width: 100%" border stripe>
+    <!-- 桌面端表格 -->
+    <el-table v-if="!isMobile" v-loading="loading" :data="studyPlans" style="width: 100%" border stripe>
       <el-table-column prop="title" label="标题" align="center" />
       <el-table-column label="学习类型" align="center" width="120">
         <template #default="{ row }">{{ row.name }}</template>
@@ -186,14 +206,14 @@ onMounted(async () => {
       <el-table-column prop="priority" label="优先级" align="center">
         <template #default="{ row }">
           <el-tag :type="getPriorityType(row.priority)">
-            {{ row.priority === 'high' ? '高' : row.priority === 'medium' ? '中' : '低' }}
+            {{ getPriorityLabel(row.priority) }}
           </el-tag>
         </template>
       </el-table-column>
       <el-table-column prop="status" label="状态" align="center">
         <template #default="{ row }">
           <el-tag :type="getStatusType(row.status)">
-            {{ row.status === 'pending' ? '待完成' : row.status === 'in_progress' ? '进行中' : '已完成' }}
+            {{ getStatusLabel(row.status) }}
           </el-tag>
         </template>
       </el-table-column>
@@ -205,25 +225,78 @@ onMounted(async () => {
       </el-table-column>
     </el-table>
 
-    <div class="pagination-container">
+    <!-- 手机端卡片列表 -->
+    <div v-else v-loading="loading" class="mobile-card-list">
+      <el-empty v-if="studyPlans.length === 0" description="暂无学习计划" />
+      <div v-for="row in studyPlans" :key="row.id" class="mobile-card">
+        <div class="mobile-card__header">
+          <span class="mobile-card__title">{{ row.title }}</span>
+          <div class="mobile-card__tags">
+            <el-tag size="small" :type="getPriorityType(row.priority)">
+              {{ getPriorityLabel(row.priority) }}
+            </el-tag>
+            <el-tag size="small" :type="getStatusType(row.status)">
+              {{ getStatusLabel(row.status) }}
+            </el-tag>
+          </div>
+        </div>
+
+        <div class="mobile-card__body">
+          <div class="mobile-card__row">
+            <span class="mobile-card__label">类型</span>
+            <span class="mobile-card__value">{{ row.name || '-' }}</span>
+          </div>
+          <div v-if="row.description" class="mobile-card__row">
+            <span class="mobile-card__label">描述</span>
+            <span class="mobile-card__value">{{ row.description }}</span>
+          </div>
+          <div class="mobile-card__row">
+            <span class="mobile-card__label">开始</span>
+            <span class="mobile-card__value">
+              {{ row.start_time ? new Date(row.start_time).toLocaleString() : '未设置' }}
+            </span>
+          </div>
+          <div class="mobile-card__row">
+            <span class="mobile-card__label">结束</span>
+            <span class="mobile-card__value">
+              {{ row.end_time ? new Date(row.end_time).toLocaleString() : '未设置' }}
+            </span>
+          </div>
+        </div>
+
+        <div class="mobile-card__actions">
+          <el-button size="small" type="primary" @click="editPlan(row)">编辑</el-button>
+          <el-button size="small" type="danger" @click="handleDelete(row.id)">删除</el-button>
+        </div>
+      </div>
+    </div>
+
+    <div class="pagination-container" :class="{ 'pagination-container--mobile': isMobile }">
       <el-pagination
         v-model:current-page="currentPage"
         v-model:page-size="pageSize"
         :total="total"
         :page-sizes="[10, 20, 50, 100]"
-        layout="total, sizes, prev, pager, next, jumper"
+        :layout="paginationLayout"
+        :small="isMobile"
         @size-change="handleSizeChange"
         @current-change="handleCurrentChange"
       />
     </div>
 
-    <el-dialog v-model="showCreateDialog" title="新增学习计划" width="50%">
-      <el-form :model="newPlan" label-width="120px" :rules="formRules">
+    <!-- 新增 Dialog -->
+    <el-dialog v-model="showCreateDialog" title="新增学习计划" :width="dialogWidth">
+      <el-form
+        :model="newPlan"
+        :label-width="formLabelWidth"
+        :label-position="formLabelPosition"
+        :rules="formRules"
+      >
         <el-form-item label="标题" prop="title" required>
           <el-input v-model="newPlan.title" placeholder="请输入标题" />
         </el-form-item>
         <el-form-item label="学习类型" prop="learning_type_id" required>
-          <el-select v-model="newPlan.learning_type_id" placeholder="请选择学习类型">
+          <el-select v-model="newPlan.learning_type_id" placeholder="请选择学习类型" style="width: 100%">
             <el-option v-for="type in learningTypes" :key="type.id" :label="type.name" :value="type.id" />
           </el-select>
         </el-form-item>
@@ -231,20 +304,30 @@ onMounted(async () => {
           <el-input v-model="newPlan.description" type="textarea" placeholder="请输入描述" />
         </el-form-item>
         <el-form-item label="开始时间">
-          <el-date-picker v-model="newPlan.start_time" type="datetime" placeholder="选择开始时间" />
+          <el-date-picker
+            v-model="newPlan.start_time"
+            type="datetime"
+            placeholder="选择开始时间"
+            style="width: 100%"
+          />
         </el-form-item>
         <el-form-item label="结束时间">
-          <el-date-picker v-model="newPlan.end_time" type="datetime" placeholder="选择结束时间" />
+          <el-date-picker
+            v-model="newPlan.end_time"
+            type="datetime"
+            placeholder="选择结束时间"
+            style="width: 100%"
+          />
         </el-form-item>
         <el-form-item label="优先级">
-          <el-select v-model="newPlan.priority">
+          <el-select v-model="newPlan.priority" style="width: 100%">
             <el-option label="高" value="high" />
             <el-option label="中" value="medium" />
             <el-option label="低" value="low" />
           </el-select>
         </el-form-item>
         <el-form-item label="状态">
-          <el-select v-model="newPlan.status">
+          <el-select v-model="newPlan.status" style="width: 100%">
             <el-option label="待完成" value="pending" />
             <el-option label="进行中" value="in_progress" />
             <el-option label="已完成" value="completed" />
@@ -257,13 +340,20 @@ onMounted(async () => {
       </template>
     </el-dialog>
 
-    <el-dialog v-model="showEditDialog" title="编辑学习计划" width="50%">
-      <el-form v-if="selectedPlan" :model="selectedPlan" label-width="120px" :rules="formRules">
+    <!-- 编辑 Dialog -->
+    <el-dialog v-model="showEditDialog" title="编辑学习计划" :width="dialogWidth">
+      <el-form
+        v-if="selectedPlan"
+        :model="selectedPlan"
+        :label-width="formLabelWidth"
+        :label-position="formLabelPosition"
+        :rules="formRules"
+      >
         <el-form-item label="标题" prop="title" required>
           <el-input v-model="selectedPlan.title" placeholder="请输入标题" />
         </el-form-item>
         <el-form-item label="学习类型" prop="learning_type_id" required>
-          <el-select v-model="selectedPlan.learning_type_id" placeholder="请选择学习类型">
+          <el-select v-model="selectedPlan.learning_type_id" placeholder="请选择学习类型" style="width: 100%">
             <el-option v-for="type in learningTypes" :key="type.id" :label="type.name" :value="type.id" />
           </el-select>
         </el-form-item>
@@ -271,20 +361,30 @@ onMounted(async () => {
           <el-input v-model="selectedPlan.description" type="textarea" placeholder="请输入描述" />
         </el-form-item>
         <el-form-item label="开始时间">
-          <el-date-picker v-model="selectedPlan.start_time" type="datetime" placeholder="选择开始时间" />
+          <el-date-picker
+            v-model="selectedPlan.start_time"
+            type="datetime"
+            placeholder="选择开始时间"
+            style="width: 100%"
+          />
         </el-form-item>
         <el-form-item label="结束时间">
-          <el-date-picker v-model="selectedPlan.end_time" type="datetime" placeholder="选择结束时间" />
+          <el-date-picker
+            v-model="selectedPlan.end_time"
+            type="datetime"
+            placeholder="选择结束时间"
+            style="width: 100%"
+          />
         </el-form-item>
         <el-form-item label="优先级">
-          <el-select v-model="selectedPlan.priority">
+          <el-select v-model="selectedPlan.priority" style="width: 100%">
             <el-option label="高" value="high" />
             <el-option label="中" value="medium" />
             <el-option label="低" value="low" />
           </el-select>
         </el-form-item>
         <el-form-item label="状态">
-          <el-select v-model="selectedPlan.status">
+          <el-select v-model="selectedPlan.status" style="width: 100%">
             <el-option label="待完成" value="pending" />
             <el-option label="进行中" value="in_progress" />
             <el-option label="已完成" value="completed" />
@@ -302,7 +402,14 @@ onMounted(async () => {
 <style lang="scss" scoped>
 .study-plan-view {
   .header {
-    margin-bottom: 20px;
+    margin-bottom: 0;
+  }
+
+  .mobile-card__tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    flex-shrink: 0;
   }
 
   .pagination-container {

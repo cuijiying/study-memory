@@ -98,19 +98,36 @@ onMounted(loadDashboard)
 .home-container {
   padding: 24px;
 
+  @include mobile {
+    padding: 16px;
+  }
+
   .welcome-section {
     margin-bottom: 32px;
+
+    @include mobile {
+      margin-bottom: 20px;
+    }
 
     h1 {
       font-size: 28px;
       font-weight: 600;
       color: var(--app-text-primary);
       margin-bottom: 8px;
+
+      @include mobile {
+        font-size: 22px;
+      }
     }
 
     .subtitle {
       color: var(--app-text-secondary);
       font-size: 16px;
+
+      @include mobile {
+        font-size: 14px;
+        line-height: 1.6;
+      }
     }
   }
 
@@ -120,6 +137,13 @@ onMounted(loadDashboard)
     gap: 24px;
     margin-bottom: 32px;
 
+    /* 手机端：固定两列布局，卡片更紧凑 */
+    @include mobile {
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
     .stat-card {
       border-radius: 8px;
 
@@ -127,6 +151,12 @@ onMounted(loadDashboard)
         display: flex;
         align-items: center;
         gap: 16px;
+
+        @include mobile {
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 10px;
+        }
 
         .stat-icon {
           width: 48px;
@@ -136,8 +166,17 @@ onMounted(loadDashboard)
           align-items: center;
           justify-content: center;
 
+          @include mobile {
+            width: 40px;
+            height: 40px;
+          }
+
           .el-icon {
             font-size: 24px;
+
+            @include mobile {
+              font-size: 20px;
+            }
           }
         }
 
@@ -146,6 +185,10 @@ onMounted(loadDashboard)
             font-size: 14px;
             color: var(--app-text-secondary);
             margin-bottom: 4px;
+
+            @include mobile {
+              font-size: 12px;
+            }
           }
 
           .stat-value {
@@ -153,10 +196,18 @@ onMounted(loadDashboard)
             font-weight: 600;
             color: var(--app-text-primary);
 
+            @include mobile {
+              font-size: 20px;
+            }
+
             .stat-unit {
               font-size: 14px;
               color: var(--app-text-muted);
               margin-left: 4px;
+
+              @include mobile {
+                font-size: 12px;
+              }
             }
           }
         }
@@ -170,11 +221,20 @@ onMounted(loadDashboard)
     border-radius: 8px;
     border: 1px solid var(--app-border);
 
+    @include mobile {
+      padding: 16px;
+    }
+
     h2 {
       font-size: 20px;
       font-weight: 600;
       color: var(--app-text-primary);
       margin-bottom: 24px;
+
+      @include mobile {
+        font-size: 17px;
+        margin-bottom: 16px;
+      }
     }
   }
 }

@@ -2,6 +2,8 @@
 import type { FormInstance, FormRules } from 'element-plus'
 import { useAuthUser } from '@/composables/useAuthUser'
 import { useTableHeight } from '@/composables/useTableHeight'
+import { useBreakpoint } from '@/composables/useBreakpoint'
+import { usePaginationLayout, useResponsiveDialog } from '@/composables/useResponsiveDialog'
 import { studyRecordService } from '@/services/studyRecordService'
 import { useLearningTypeStore } from '@/stores/learningType'
 import type { StudyRecord } from '@/types'
@@ -9,6 +11,9 @@ import { formatDateTime, isSameDay } from '@/utils/date'
 
 const { requireUserId } = useAuthUser()
 const { tableHeight } = useTableHeight()
+const { isMobile } = useBreakpoint()
+const { paginationLayout } = usePaginationLayout()
+const { dialogWidth } = useResponsiveDialog('500px')
 const learningTypeStore = useLearningTypeStore()
 const { learningTypes } = storeToRefs(learningTypeStore)
 
@@ -43,12 +48,13 @@ const rules: FormRules = {
   learning_type_id: [{ required: true, message: '请选择学习类型', trigger: 'change' }],
 }
 
+/** 五次复习时间字段配置，桌面端表格列与手机端卡片共用 */
 const reviewTimeFields = [
-  { key: 'review1_time', index: 0, label: '第一次复习时间' },
-  { key: 'review2_time', index: 1, label: '第二次复习时间' },
-  { key: 'review3_time', index: 2, label: '第三次复习时间' },
-  { key: 'review4_time', index: 3, label: '第四次复习时间' },
-  { key: 'review5_time', index: 4, label: '第五次复习时间' },
+  { key: 'review1_time', index: 0, label: '第一次复习' },
+  { key: 'review2_time', index: 1, label: '第二次复习' },
+  { key: 'review3_time', index: 2, label: '第三次复习' },
+  { key: 'review4_time', index: 3, label: '第四次复习' },
+  { key: 'review5_time', index: 4, label: '第五次复习' },
 ] as const
 
 const getReviewCellClass = (row: StudyRecord, index: number, time?: string) => {
@@ -177,8 +183,9 @@ onMounted(async () => {
 
 <template>
   <div class="study-notes page-panel">
+    <!-- 筛选栏 + 新增按钮：手机端纵向堆叠 -->
     <div class="header page-panel__header">
-      <div class="filters">
+      <div class="filters" :class="{ 'filters--mobile': isMobile }">
         <div class="filter-item">
           <label>学习类型:</label>
           <el-select
@@ -206,10 +213,12 @@ onMounted(async () => {
         </div>
       </div>
 
-      <el-button type="primary" @click="openDialog()">新增笔记</el-button>
+      <el-button type="primary" class="btn-block-mobile" @click="openDialog()">新增笔记</el-button>
     </div>
 
+    <!-- 桌面端：完整表格 -->
     <el-table
+      v-if="!isMobile"
       v-loading="loading"
       :data="notes"
       :height="tableHeight"
@@ -263,22 +272,92 @@ onMounted(async () => {
       </el-table-column>
     </el-table>
 
-    <div class="pagination-container">
+    <!-- 手机端：卡片列表，避免宽表格横向滚动 -->
+    <div v-else v-loading="loading" class="mobile-card-list">
+      <el-empty v-if="notes.length === 0" description="暂无笔记" />
+      <div v-for="row in notes" :key="row.id" class="mobile-card">
+        <div class="mobile-card__header">
+          <span class="mobile-card__title">{{ row.title }}</span>
+          <el-tag size="small" type="info">{{ row.name || '未分类' }}</el-tag>
+        </div>
+
+        <div class="mobile-card__body">
+          <div v-if="row.description" class="mobile-card__row">
+            <span class="mobile-card__label">描述</span>
+            <span class="mobile-card__value">{{ row.description }}</span>
+          </div>
+          <div v-if="row.link" class="mobile-card__row">
+            <span class="mobile-card__label">链接</span>
+            <el-link type="primary" :href="row.link" target="_blank" class="mobile-card__value">
+              {{ row.link }}
+            </el-link>
+          </div>
+
+          <!-- 复习状态圆点：手机端加大触控区域（24px） -->
+          <div class="mobile-card__row">
+            <span class="mobile-card__label">复习</span>
+            <div class="review-status review-status--mobile">
+              <div
+                v-for="(status, index) in row.review_status?.split('')"
+                :key="index"
+                class="status-circle status-circle--mobile"
+                :class="{ completed: status === '1', clickable: status === '0' }"
+                @click="status === '0' && updateReviewStatus(row.id, index)"
+              />
+            </div>
+          </div>
+
+          <!-- 五次复习时间 -->
+          <div
+            v-for="field in reviewTimeFields"
+            :key="field.key"
+            class="mobile-card__row"
+          >
+            <span class="mobile-card__label">{{ field.label }}</span>
+            <span
+              class="mobile-card__value"
+              :class="getReviewCellClass(row, field.index, row[field.key])"
+            >
+              {{ formatDateTime(row[field.key]) || '-' }}
+            </span>
+          </div>
+        </div>
+
+        <div class="mobile-card__actions">
+          <el-button size="small" type="primary" @click="openDialog(row)">编辑</el-button>
+          <el-button size="small" type="danger" @click="handleDelete(row.id)">删除</el-button>
+        </div>
+      </div>
+    </div>
+
+    <div class="pagination-container" :class="{ 'pagination-container--mobile': isMobile }">
       <el-pagination
         v-model:current-page="currentPage"
         v-model:page-size="pageSize"
         :total="total"
         :page-sizes="[10, 20, 50]"
-        layout="total, sizes, prev, pager, next, jumper"
+        :layout="paginationLayout"
+        :small="isMobile"
         @size-change="handleSizeChange"
         @current-change="handleCurrentChange"
       />
     </div>
 
-    <el-dialog v-model="dialogVisible" :title="isEdit ? '编辑笔记' : '新增笔记'" width="500px">
-      <el-form ref="formRef" :model="formData" :rules="rules" label-width="100px">
+    <!-- 表单 Dialog：手机端宽度 92% -->
+    <el-dialog
+      v-model="dialogVisible"
+      :title="isEdit ? '编辑笔记' : '新增笔记'"
+      :width="dialogWidth"
+    >
+      <el-form
+        ref="formRef"
+        :model="formData"
+        :rules="rules"
+        :label-width="isMobile ? '80px' : '100px'"
+        :label-position="isMobile ? 'top' : 'right'"
+      >
         <el-form-item label="学习类型" prop="learning_type_id">
-          <el-select v-model="formData.learning_type_id" placeholder="请选择学习类型">
+          <el-select v-model="formData.learning_type_id" placeholder="请选择学习类型" style="width: 100%">
             <el-option
               v-for="type in learningTypes"
               :key="type.id"
@@ -342,11 +421,22 @@ onMounted(async () => {
     justify-content: center;
     gap: 8px;
 
+    &--mobile {
+      justify-content: flex-start;
+      flex-wrap: wrap;
+    }
+
     .status-circle {
       width: 16px;
       height: 16px;
       border-radius: 50%;
       background-color: #909399;
+
+      /* 手机端加大触控热区 */
+      &--mobile {
+        width: 24px;
+        height: 24px;
+      }
 
       &.completed {
         background-color: #67c23a;

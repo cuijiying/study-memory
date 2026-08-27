@@ -1,0 +1,36 @@
+/**
+ * SCSS 响应式 mixin — 与 useBreakpoint.ts 中 BREAKPOINTS 保持一致
+ *
+ * 用法示例：
+ *   @include mobile { padding: 12px; }
+ *   @include tablet-down { flex-direction: column; }
+ */
+@use "@/styles/variables.scss" as *;
+
+/** 手机端：max-width 767px（对应 BREAKPOINTS.sm = 768） */
+@mixin mobile {
+  @media (max-width: #{$sm - 1px}) {
+    @content;
+  }
+}
+
+/** 平板及以下：max-width 991px（对应 BREAKPOINTS.md = 992） */
+@mixin tablet-down {
+  @media (max-width: #{$md - 1px}) {
+    @content;
+  }
+}
+
+/** 桌面端：min-width 992px */
+@mixin desktop {
+  @media (min-width: $md) {
+    @content;
+  }
+}
+
+/** 宽屏桌面：min-width 1200px */
+@mixin wide {
+  @media (min-width: $lg) {
+    @content;
+  }
+}

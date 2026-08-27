@@ -50,6 +50,10 @@ body {
   background-color: var(--app-bg);
   color: var(--app-text-primary);
   transition: background-color 0.25s ease, color 0.25s ease;
+  /* 禁止 iOS 双击缩放导致的布局抖动 */
+  touch-action: manipulation;
+  /* 适配 iPhone 刘海屏 / 底部 Home Indicator 安全区域 */
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
 }
 
 .page-panel {
@@ -68,4 +72,133 @@ body {
   background-color: var(--app-surface-muted);
   border-radius: 8px;
   border: 1px solid var(--app-border);
+}
+
+/* ========== 移动端 H5 全局工具类 ========== */
+
+/** 手机端页面面板：减小内边距，避免内容区过窄 */
+@media (max-width: 767px) {
+  .page-panel {
+    padding: 12px;
+    border-radius: 6px;
+  }
+
+  .page-panel__header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+    padding: 12px;
+    margin-bottom: 12px;
+  }
+}
+
+/** 移动端卡片列表容器 — 表格页在手机端切换为卡片时使用 */
+.mobile-card-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/** 单条移动端数据卡片 */
+.mobile-card {
+  background: var(--app-surface);
+  border: 1px solid var(--app-border);
+  border-radius: 8px;
+  padding: 14px;
+  box-shadow: var(--app-card-shadow);
+}
+
+.mobile-card__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.mobile-card__title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--app-text-primary);
+  word-break: break-word;
+  flex: 1;
+}
+
+.mobile-card__body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/** 卡片内字段行：标签 + 值 */
+.mobile-card__row {
+  display: flex;
+  font-size: 13px;
+  line-height: 1.5;
+  gap: 8px;
+}
+
+.mobile-card__label {
+  flex-shrink: 0;
+  color: var(--app-text-muted);
+  min-width: 64px;
+}
+
+.mobile-card__value {
+  color: var(--app-text-secondary);
+  word-break: break-word;
+  flex: 1;
+}
+
+.mobile-card__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--app-border);
+}
+
+/** 移动端分页容器：居中显示，允许横向滚动 */
+.pagination-container--mobile {
+  margin-top: 16px;
+  display: flex;
+  justify-content: center;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/** 移动端筛选栏：纵向堆叠 */
+.filters--mobile {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+}
+
+.filters--mobile .filter-item {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
+}
+
+.filters--mobile .filter-item label {
+  font-size: 13px;
+  color: var(--app-text-secondary);
+}
+
+.filters--mobile .el-select {
+  width: 100% !important;
+}
+
+/** 移动端全宽按钮 */
+.btn-block-mobile {
+  width: 100%;
+}
+
+@media (min-width: 768px) {
+  .btn-block-mobile {
+    width: auto;
+  }
 }

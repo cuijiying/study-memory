@@ -2,6 +2,12 @@
 import { ref, onMounted } from 'vue'
 import { issueService, type Issue } from '@/services/issueService'
 import { ElMessage } from 'element-plus'
+import { useBreakpoint } from '@/composables/useBreakpoint'
+import { usePaginationLayout, useResponsiveDialog } from '@/composables/useResponsiveDialog'
+
+const { isMobile } = useBreakpoint()
+const { paginationLayout } = usePaginationLayout()
+const { dialogWidth } = useResponsiveDialog('50%')
 
 const issues = ref<Issue[]>([])
 const loading = ref(false)
@@ -28,7 +34,7 @@ const issueTypes = [
   '业务逻辑',
   '性能优化',
   '安全问题',
-  '其他'
+  '其他',
 ]
 
 const fetchIssues = async () => {
@@ -85,7 +91,7 @@ const handleEdit = (issue: Issue) => {
 
 const handleUpdate = async () => {
   if (!currentIssue.value.issue_id) return
-  
+
   try {
     await issueService.updateIssue(currentIssue.value.issue_id, {
       title: currentIssue.value.title,
@@ -142,22 +148,31 @@ const paginatedIssues = computed(() => {
   return issues.value.slice(start, end)
 })
 
+/** 优先级 Tag 类型映射 */
+const getPriorityType = (priority: string) =>
+  priority === '高' ? 'danger' : priority === '中' ? 'warning' : 'info'
+
+const openCreateDialog = () => {
+  dialogVisible.value = true
+  isEditing.value = false
+}
+
 onMounted(fetchIssues)
 </script>
 
 <template>
-  <div class="issues-container">
-    <div class="header">
-      <!-- <h1>问题管理</h1> -->
-      <el-button type="primary" @click="dialogVisible = true; isEditing = false">
+  <div class="issues-container page-panel">
+    <div class="header page-panel__header">
+      <el-button type="primary" class="btn-block-mobile" @click="openCreateDialog">
         新建问题
       </el-button>
     </div>
 
     <el-card class="table-card">
-      <el-table v-loading="loading" :data="paginatedIssues" style="width: 100%" border stripe>
-        <el-table-column prop="title" label="标题" min-width="150"/>
-        <el-table-column prop="issue_type" label="类型" width="120"/>
+      <!-- 桌面端表格 -->
+      <el-table v-if="!isMobile" v-loading="loading" :data="paginatedIssues" style="width: 100%" border stripe>
+        <el-table-column prop="title" label="标题" min-width="150" />
+        <el-table-column prop="issue_type" label="类型" width="120" />
         <el-table-column prop="description" label="描述" min-width="200">
           <template #default="{ row }">
             <el-tooltip :content="row.description" placement="top">
@@ -168,7 +183,7 @@ onMounted(fetchIssues)
 
         <el-table-column prop="priority" label="优先级" width="100">
           <template #default="{ row }">
-            <el-tag :type="row.priority === '高' ? 'danger' : row.priority === '中' ? 'warning' : 'info'">
+            <el-tag :type="getPriorityType(row.priority)">
               {{ row.priority }}
             </el-tag>
           </template>
@@ -202,13 +217,61 @@ onMounted(fetchIssues)
         </el-table-column>
       </el-table>
 
-      <div class="pagination-container">
+      <!-- 手机端卡片列表 -->
+      <div v-else v-loading="loading" class="mobile-card-list">
+        <el-empty v-if="paginatedIssues.length === 0" description="暂无问题" />
+        <div v-for="row in paginatedIssues" :key="row.issue_id" class="mobile-card">
+          <div class="mobile-card__header">
+            <span class="mobile-card__title">{{ row.title }}</span>
+            <el-tag size="small" :type="getPriorityType(row.priority)">{{ row.priority }}</el-tag>
+          </div>
+
+          <div class="mobile-card__body">
+            <div class="mobile-card__row">
+              <span class="mobile-card__label">类型</span>
+              <span class="mobile-card__value">{{ row.issue_type }}</span>
+            </div>
+            <div class="mobile-card__row">
+              <span class="mobile-card__label">描述</span>
+              <span class="mobile-card__value">{{ row.description }}</span>
+            </div>
+            <div class="mobile-card__row">
+              <span class="mobile-card__label">状态</span>
+              <el-select
+                v-model="row.status"
+                size="small"
+                style="flex: 1"
+                @change="handleUpdateStatus(row, $event)"
+              >
+                <el-option label="待处理" value="待处理" />
+                <el-option label="处理中" value="处理中" />
+                <el-option label="已解决" value="已解决" />
+              </el-select>
+            </div>
+            <div class="mobile-card__row">
+              <span class="mobile-card__label">创建</span>
+              <span class="mobile-card__value">{{ new Date(row.created_at).toLocaleString() }}</span>
+            </div>
+          </div>
+
+          <div class="mobile-card__actions">
+            <el-button size="small" type="primary" @click="$router.push(`/issues/${row.issue_id}`)">
+              详情
+            </el-button>
+            <el-button size="small" @click="handleEdit(row)">编辑</el-button>
+            <el-button size="small" type="danger" @click="handleDelete(row.issue_id)">删除</el-button>
+          </div>
+        </div>
+      </div>
+
+      <div class="pagination-container" :class="{ 'pagination-container--mobile': isMobile }">
         <el-pagination
           v-model:current-page="currentPage"
           v-model:page-size="pageSize"
           :page-sizes="[10, 20, 50, 100]"
           :total="total"
-          layout="total, sizes, prev, pager, next, jumper"
+          :layout="paginationLayout"
+          :small="isMobile"
           @size-change="handleSizeChange"
           @current-change="handleCurrentChange"
         />
@@ -218,14 +281,18 @@ onMounted(fetchIssues)
     <el-dialog
       v-model="dialogVisible"
       :title="isEditing ? '编辑问题' : '新建问题'"
-      width="50%"
+      :width="dialogWidth"
     >
-      <el-form :model="currentIssue" label-width="100px">
+      <el-form
+        :model="currentIssue"
+        :label-width="isMobile ? undefined : '100px'"
+        :label-position="isMobile ? 'top' : 'right'"
+      >
         <el-form-item label="标题" required>
           <el-input v-model="currentIssue.title" placeholder="请输入标题" />
         </el-form-item>
         <el-form-item label="问题类型" required>
-          <el-select v-model="currentIssue.issue_type" placeholder="请选择问题类型">
+          <el-select v-model="currentIssue.issue_type" placeholder="请选择问题类型" style="width: 100%">
             <el-option
               v-for="type in issueTypes"
               :key="type"
@@ -235,7 +302,7 @@ onMounted(fetchIssues)
           </el-select>
         </el-form-item>
         <el-form-item label="优先级" required>
-          <el-select v-model="currentIssue.priority" placeholder="请选择优先级">
+          <el-select v-model="currentIssue.priority" placeholder="请选择优先级" style="width: 100%">
             <el-option label="高" value="高" />
             <el-option label="中" value="中" />
             <el-option label="低" value="低" />
@@ -262,39 +329,41 @@ onMounted(fetchIssues)
   </div>
 </template>
 
-<style scoped>
+<style lang="scss" scoped>
 .issues-container {
-  padding: 20px;
-}
+  .header {
+    margin-bottom: 0;
+  }
 
-.header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 20px;
-}
+  .table-card {
+    margin-bottom: 20px;
+    border: none;
+    box-shadow: none;
+    background: transparent;
 
-.table-card {
-  margin-bottom: 20px;
-}
+    :deep(.el-card__body) {
+      padding: 0;
+    }
+  }
 
-.pagination-container {
-  margin-top: 20px;
-  display: flex;
-  justify-content: flex-end;
-}
+  .pagination-container {
+    margin-top: 20px;
+    display: flex;
+    justify-content: flex-end;
+  }
 
-.dialog-footer {
-  display: flex;
-  justify-content: flex-end;
-  gap: 10px;
-}
+  .dialog-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+  }
 
-.ellipsis {
-  display: block;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 300px;
+  .ellipsis {
+    display: block;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 300px;
+  }
 }
 </style>

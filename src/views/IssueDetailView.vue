@@ -3,9 +3,11 @@ import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { issueService, type Issue } from '@/services/issueService'
 import { ElMessage } from 'element-plus'
+import { useBreakpoint } from '@/composables/useBreakpoint'
 
 const route = useRoute()
 const router = useRouter()
+const { isMobile } = useBreakpoint()
 const loading = ref(false)
 const issue = ref<Issue | null>(null)
 const isEditing = ref(false)
@@ -16,7 +18,7 @@ const issueTypes = [
   '业务逻辑',
   '性能优化',
   '安全问题',
-  '其他'
+  '其他',
 ]
 
 const fetchIssue = async () => {
@@ -34,7 +36,7 @@ const fetchIssue = async () => {
 
 const handleUpdate = async () => {
   if (!issue.value) return
-  
+
   try {
     await issueService.updateIssue(issue.value.issue_id, {
       title: issue.value.title,
@@ -56,7 +58,7 @@ const handleUpdate = async () => {
 
 const handleDelete = async () => {
   if (!issue.value) return
-  
+
   try {
     await issueService.deleteIssue(issue.value.issue_id)
     ElMessage.success('删除成功')
@@ -71,7 +73,8 @@ onMounted(fetchIssue)
 </script>
 
 <template>
-  <div v-loading="loading" class="issue-detail-container">
+  <div v-loading="loading" class="issue-detail-container page-panel">
+    <!-- 顶栏操作区：手机端纵向堆叠 -->
     <div class="header">
       <el-button @click="router.push('/issues')">返回列表</el-button>
       <div class="actions">
@@ -83,14 +86,18 @@ onMounted(fetchIssue)
     </div>
 
     <template v-if="issue">
-      <el-form :model="issue" label-width="100px">
+      <el-form
+        :model="issue"
+        :label-width="isMobile ? undefined : '100px'"
+        :label-position="isMobile ? 'top' : 'right'"
+      >
         <el-form-item label="标题">
           <el-input v-if="isEditing" v-model="issue.title" />
-          <span v-else>{{ issue.title }}</span>
+          <span v-else class="field-value">{{ issue.title }}</span>
         </el-form-item>
 
         <el-form-item label="问题类型">
-          <el-select v-if="isEditing" v-model="issue.issue_type">
+          <el-select v-if="isEditing" v-model="issue.issue_type" style="width: 100%">
             <el-option
               v-for="type in issueTypes"
               :key="type"
@@ -98,11 +105,11 @@ onMounted(fetchIssue)
               :value="type"
             />
           </el-select>
-          <span v-else>{{ issue.issue_type }}</span>
+          <span v-else class="field-value">{{ issue.issue_type }}</span>
         </el-form-item>
 
         <el-form-item label="优先级">
-          <el-select v-if="isEditing" v-model="issue.priority">
+          <el-select v-if="isEditing" v-model="issue.priority" style="width: 100%">
             <el-option label="高" value="高" />
             <el-option label="中" value="中" />
             <el-option label="低" value="低" />
@@ -113,7 +120,7 @@ onMounted(fetchIssue)
         </el-form-item>
 
         <el-form-item label="状态">
-          <el-select v-if="isEditing" v-model="issue.status">
+          <el-select v-if="isEditing" v-model="issue.status" style="width: 100%">
             <el-option label="待处理" value="待处理" />
             <el-option label="处理中" value="处理中" />
             <el-option label="已解决" value="已解决" />
@@ -130,7 +137,7 @@ onMounted(fetchIssue)
             type="textarea"
             :rows="4"
           />
-          <div v-else class="pre-wrap">{{ issue.description }}</div>
+          <div v-else class="pre-wrap field-value">{{ issue.description }}</div>
         </el-form-item>
 
         <el-form-item label="出现原因">
@@ -140,7 +147,7 @@ onMounted(fetchIssue)
             type="textarea"
             :rows="4"
           />
-          <div v-else class="pre-wrap">{{ issue.cause }}</div>
+          <div v-else class="pre-wrap field-value">{{ issue.cause || '-' }}</div>
         </el-form-item>
 
         <el-form-item label="解决方案">
@@ -150,7 +157,7 @@ onMounted(fetchIssue)
             type="textarea"
             :rows="4"
           />
-          <div v-else class="pre-wrap">{{ issue.solution }}</div>
+          <div v-else class="pre-wrap field-value">{{ issue.solution || '-' }}</div>
         </el-form-item>
 
         <el-form-item label="预防措施">
@@ -160,11 +167,11 @@ onMounted(fetchIssue)
             type="textarea"
             :rows="4"
           />
-          <div v-else class="pre-wrap">{{ issue.preventive_measures }}</div>
+          <div v-else class="pre-wrap field-value">{{ issue.preventive_measures || '-' }}</div>
         </el-form-item>
 
         <el-form-item v-if="isEditing">
-          <el-button type="primary" @click="handleUpdate">保存</el-button>
+          <el-button type="primary" class="btn-block-mobile" @click="handleUpdate">保存</el-button>
         </el-form-item>
       </el-form>
 
@@ -176,9 +183,8 @@ onMounted(fetchIssue)
   </div>
 </template>
 
-<style scoped>
+<style lang="scss" scoped>
 .issue-detail-container {
-  padding: 20px;
   max-width: 800px;
   margin: 0 auto;
 }
@@ -188,20 +194,45 @@ onMounted(fetchIssue)
   justify-content: space-between;
   align-items: center;
   margin-bottom: 20px;
+  gap: 12px;
+
+  /* 手机端：返回按钮与操作按钮分行显示 */
+  @include mobile {
+    flex-direction: column;
+    align-items: stretch;
+  }
 }
 
 .actions {
   display: flex;
   gap: 10px;
+
+  @include mobile {
+    width: 100%;
+
+    .el-button {
+      flex: 1;
+    }
+  }
+}
+
+.field-value {
+  color: var(--app-text-primary);
+  line-height: 1.6;
 }
 
 .pre-wrap {
   white-space: pre-wrap;
+  word-break: break-word;
 }
 
 .timestamps {
   margin-top: 20px;
-  color: #666;
+  color: var(--app-text-muted);
   font-size: 0.9em;
+
+  p {
+    margin: 4px 0;
+  }
 }
-</style> 
+</style>

@@ -3,7 +3,16 @@
   <head>
     <meta charset="UTF-8">
     <link rel="icon" href="/favicon.ico">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- 移动端视口：width=device-width 使页面宽度等于设备宽度，initial-scale=1 禁止初始缩放 -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <!-- 浏览器地址栏 / 状态栏主题色，与深色主题默认色一致 -->
+    <meta name="theme-color" content="#0d1117" media="(prefers-color-scheme: dark)">
+    <meta name="theme-color" content="#f0f2f5" media="(prefers-color-scheme: light)">
+    <!-- iOS Safari：允许全屏 Web App 模式（添加到主屏幕时） -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <!-- iOS 状态栏样式：dark-content 表示深色文字（配合浅色背景） -->
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="format-detection" content="telephone=no">
     <title>艾宾浩斯记忆学习系统</title>
     <script>
       (function () {
