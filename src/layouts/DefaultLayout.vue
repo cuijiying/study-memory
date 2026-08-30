@@ -413,7 +413,7 @@ watch(
 
     .el-main {
       background-color: var(--app-bg);
-      padding: 12px;
+      padding: 8px;
 
       @include desktop {
         padding: 16px;

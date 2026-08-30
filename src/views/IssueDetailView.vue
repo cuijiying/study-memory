@@ -97,7 +97,7 @@ onMounted(fetchIssue)
         :label-width="formLabelWidth"
         :label-position="formLabelPosition"
       >
-        <el-form-item label="标题">
+        <el-form-item label="标题" class="form-item--full">
           <el-input v-if="isEditing" v-model="issue.title" />
           <span v-else class="field-value">{{ issue.title }}</span>
         </el-form-item>
@@ -125,7 +125,7 @@ onMounted(fetchIssue)
           </el-tag>
         </el-form-item>
 
-        <el-form-item label="状态">
+        <el-form-item label="状态" class="form-item--full">
           <el-select v-if="isEditing" v-model="issue.status" style="width: 100%">
             <el-option label="待处理" value="待处理" />
             <el-option label="处理中" value="处理中" />
@@ -136,7 +136,7 @@ onMounted(fetchIssue)
           </el-tag>
         </el-form-item>
 
-        <el-form-item label="问题描述">
+        <el-form-item label="问题描述" class="form-item--full">
           <el-input
             v-if="isEditing"
             v-model="issue.description"
@@ -146,7 +146,7 @@ onMounted(fetchIssue)
           <div v-else class="pre-wrap field-value">{{ issue.description }}</div>
         </el-form-item>
 
-        <el-form-item label="出现原因">
+        <el-form-item label="出现原因" class="form-item--full">
           <el-input
             v-if="isEditing"
             v-model="issue.cause"
@@ -156,7 +156,7 @@ onMounted(fetchIssue)
           <div v-else class="pre-wrap field-value">{{ issue.cause || '-' }}</div>
         </el-form-item>
 
-        <el-form-item label="解决方案">
+        <el-form-item label="解决方案" class="form-item--full">
           <el-input
             v-if="isEditing"
             v-model="issue.solution"
@@ -166,7 +166,7 @@ onMounted(fetchIssue)
           <div v-else class="pre-wrap field-value">{{ issue.solution || '-' }}</div>
         </el-form-item>
 
-        <el-form-item label="预防措施">
+        <el-form-item label="预防措施" class="form-item--full">
           <el-input
             v-if="isEditing"
             v-model="issue.preventive_measures"
@@ -176,7 +176,7 @@ onMounted(fetchIssue)
           <div v-else class="pre-wrap field-value">{{ issue.preventive_measures || '-' }}</div>
         </el-form-item>
 
-        <el-form-item v-if="isEditing">
+        <el-form-item v-if="isEditing" class="form-item--full">
           <el-button type="primary" class="btn-block-mobile" @click="handleUpdate">保存</el-button>
         </el-form-item>
       </el-form>
@@ -192,7 +192,13 @@ onMounted(fetchIssue)
 <style lang="scss" scoped>
 .issue-detail-container {
   max-width: 800px;
+  width: 100%;
   margin: 0 auto;
+  box-sizing: border-box;
+
+  @include mobile {
+    max-width: none;
+  }
 }
 
 .header {

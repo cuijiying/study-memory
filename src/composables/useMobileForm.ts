@@ -5,7 +5,9 @@ import { useResponsiveDialog } from './useResponsiveDialog'
 /**
  * 移动端表单与 Dialog 统一适配
  *
- * - 手机端：label 顶部对齐、表单项全宽、Dialog 接近全屏并可滚动
+ * - 手机端：label 顶部对齐、双列网格（一行两个）、表单项全宽、Dialog 接近全屏并可滚动
+ * - 长字段在 el-form-item 上加 class="form-item--full" 独占整行
+ * - 登录/注册等 auth 表单保持单列（auth-form 类排除网格）
  * - 桌面端：label 右侧对齐、固定 label 宽度
  */
 export function useMobileForm(desktopLabelWidth = '100px', desktopDialogWidth = '50%') {

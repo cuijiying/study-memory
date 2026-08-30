@@ -189,7 +189,7 @@ onMounted(async () => {
     <div class="header page-panel__header">
       <div class="filters" :class="{ 'filters--mobile': isMobile }">
         <div class="filter-item">
-          <label>学习类型:</label>
+          <label>学习类型</label>
           <el-select
             v-model="queryParams.learningTypeId"
             placeholder="选择学习类型"
@@ -206,7 +206,7 @@ onMounted(async () => {
         </div>
 
         <div class="filter-item">
-          <label>复习状态:</label>
+          <label>复习状态</label>
           <el-select v-model="queryParams.reviewStatus" @change="handleFilterChange">
             <el-option label="全部" value="all" />
             <el-option label="已完成复习" value="complete" />
@@ -372,14 +372,14 @@ onMounted(async () => {
             />
           </el-select>
         </el-form-item>
-        <el-form-item label="标题" prop="title">
-          <el-input v-model="formData.title" placeholder="请输入标题" />
-        </el-form-item>
-        <el-form-item label="描述" prop="description">
-          <el-input v-model="formData.description" type="textarea" placeholder="请输入描述" />
-        </el-form-item>
         <el-form-item label="链接" prop="link">
           <el-input v-model="formData.link" placeholder="请输入链接" />
+        </el-form-item>
+        <el-form-item label="标题" prop="title" class="form-item--full">
+          <el-input v-model="formData.title" placeholder="请输入标题" />
+        </el-form-item>
+        <el-form-item label="描述" prop="description" class="form-item--full">
+          <el-input v-model="formData.description" type="textarea" placeholder="请输入描述" />
         </el-form-item>
       </el-form>
       <template #footer>
@@ -401,6 +401,7 @@ onMounted(async () => {
       display: flex;
       gap: 24px;
       align-items: center;
+      flex-wrap: wrap;
 
       .filter-item {
         display: flex;
@@ -415,6 +416,29 @@ onMounted(async () => {
 
         .el-select {
           width: 180px;
+        }
+      }
+
+      @include mobile {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+        width: 100%;
+        align-items: stretch;
+
+        .filter-item {
+          flex-direction: column;
+          align-items: stretch;
+          min-width: 0;
+
+          label {
+            font-size: 13px;
+            white-space: normal;
+          }
+
+          .el-select {
+            width: 100%;
+          }
         }
       }
     }

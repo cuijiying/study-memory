@@ -76,10 +76,10 @@ body {
 
 /* ========== 移动端 H5 全局工具类 ========== */
 
-/** 手机端页面面板：减小内边距，避免内容区过窄 */
+/** 手机端页面面板：减小内边距，让表单可用宽度更大 */
 @media (max-width: 767px) {
   .page-panel {
-    padding: 12px;
+    padding: 10px;
     border-radius: 6px;
   }
 
@@ -89,6 +89,11 @@ body {
     gap: 12px;
     padding: 12px;
     margin-bottom: 12px;
+  }
+
+  .page-panel__header .filters {
+    width: 100%;
+    min-width: 0;
   }
 }
 
@@ -168,32 +173,69 @@ body {
   -webkit-overflow-scrolling: touch;
 }
 
-/** 移动端筛选栏：纵向堆叠 */
-.filters--mobile {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  width: 100%;
-}
+/**
+ * 移动端筛选栏：一行两个、等分铺满
+ * 用媒体查询提高优先级，避免被各页 scoped 的桌面宽度盖住
+ * 长筛选项加 class="filter-item--full" 独占整行
+ */
+@media (max-width: 767px) {
+  .page-panel__header .filters,
+  .filters.filters--mobile,
+  .filters--mobile {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 10px;
+    row-gap: 12px;
+    width: 100%;
+    align-items: stretch;
+    flex-wrap: unset;
+  }
 
-.filters--mobile .filter-item {
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  gap: 6px;
-}
+  .page-panel__header .filters .filter-item,
+  .filters--mobile .filter-item {
+    display: flex !important;
+    flex-direction: column;
+    align-items: stretch !important;
+    gap: 6px;
+    width: 100%;
+    min-width: 0;
+  }
 
-.filters--mobile .filter-item label {
-  font-size: 13px;
-  color: var(--app-text-secondary);
-}
+  .page-panel__header .filters .filter-item--full,
+  .filters--mobile .filter-item--full {
+    grid-column: 1 / -1;
+  }
 
-.filters--mobile .el-select {
-  width: 100% !important;
-}
+  .page-panel__header .filters .filter-item label,
+  .filters--mobile .filter-item label {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--app-text-secondary);
+    line-height: 1.4;
+  }
 
-.filters--mobile .el-input-number {
-  width: 100% !important;
+  .page-panel__header .filters .el-select,
+  .page-panel__header .filters .el-input-number,
+  .page-panel__header .filters .el-input,
+  .page-panel__header .filters .el-date-editor,
+  .filters--mobile .el-select,
+  .filters--mobile .el-input-number,
+  .filters--mobile .el-input,
+  .filters--mobile .el-date-editor {
+    width: 100% !important;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  .page-panel__header .filters .el-select .el-select__wrapper,
+  .filters--mobile .el-select .el-select__wrapper {
+    width: 100%;
+  }
+
+  .page-panel__header .filters .el-input-number .el-input__inner,
+  .filters--mobile .el-input-number .el-input__inner {
+    text-align: left;
+  }
 }
 
 /** 移动端全宽按钮 */
@@ -210,19 +252,42 @@ body {
 /* ========== 移动端表单与 Dialog 全局适配 ========== */
 
 @media (max-width: 767px) {
-  /** 页面内表单（非弹框） */
-  .page-panel .mobile-form.el-form .el-form-item,
-  .page-panel .el-form.mobile-form .el-form-item {
-    margin-bottom: 18px;
+  /**
+   * 移动端表单双列网格（登录/注册等 auth 表单保持单列）
+   * - 默认一行两个表单项，等分铺满整行
+   * - 长字段加 class="form-item--full" 独占整行
+   */
+  .mobile-form.el-form:not(.auth-form) {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 10px;
+    row-gap: 14px;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .mobile-form.el-form:not(.auth-form) .el-form-item {
+    margin-bottom: 0;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .mobile-form.el-form:not(.auth-form) .el-form-item.form-item--full {
+    grid-column: 1 / -1;
   }
 
   .mobile-form.el-form .el-form-item__label {
-    font-size: 14px;
+    font-size: 13px;
     font-weight: 500;
     color: var(--app-text-secondary);
     line-height: 1.4;
-    padding-bottom: 6px;
+    padding-bottom: 4px;
     margin-bottom: 0;
+  }
+
+  .mobile-form.el-form .el-form-item__content {
+    width: 100%;
+    min-width: 0;
   }
 
   .mobile-form.el-form .el-input,
@@ -231,6 +296,12 @@ body {
   .mobile-form.el-form .el-date-editor,
   .mobile-form.el-form .el-input-number {
     width: 100% !important;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  .mobile-form.el-form .el-select .el-select__wrapper {
+    width: 100%;
   }
 
   .mobile-form.el-form .el-textarea__inner {
@@ -240,6 +311,14 @@ body {
   .mobile-form.el-form .el-input__inner,
   .mobile-form.el-form .el-textarea__inner {
     font-size: 16px; /* 防止 iOS 输入框聚焦自动缩放 */
+  }
+
+  .mobile-form.el-form .el-input-number .el-input__inner {
+    text-align: left;
+  }
+
+  .mobile-form.el-form .el-date-editor.el-input {
+    --el-date-editor-width: 100%;
   }
 
   /** 弹框：接近全屏、内容区可滚动、底部按钮纵向全宽 */
@@ -283,7 +362,12 @@ body {
     flex: 1;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
-    padding: 4px 16px 16px;
+    padding: 4px 12px 16px;
+    box-sizing: border-box;
+  }
+
+  .responsive-dialog .el-dialog__body > .mobile-form.el-form {
+    width: 100%;
   }
 
   .responsive-dialog .el-dialog__footer {
@@ -308,16 +392,23 @@ body {
     font-size: 16px;
   }
 
-  /** 页面内详情/编辑表单 */
-  .page-panel > .el-form .el-form-item {
-    margin-bottom: 18px;
+  /** 页面内详情/编辑表单（与弹框表单共用双列网格） */
+  .page-panel > .el-form.mobile-form .el-form-item {
+    margin-bottom: 0;
+  }
+
+  .page-panel > .el-form.mobile-form .el-form-item__content {
+    width: 100%;
+    min-width: 0;
   }
 
   .page-panel > .el-form .el-input,
   .page-panel > .el-form .el-select,
   .page-panel > .el-form .el-textarea,
-  .page-panel > .el-form .el-date-editor {
+  .page-panel > .el-form .el-date-editor,
+  .page-panel > .el-form .el-input-number {
     width: 100% !important;
+    max-width: 100%;
   }
 
   .page-panel > .el-form .el-input__inner,

@@ -166,10 +166,10 @@ const handleDelete = async (row: LearningType) => {
         :label-width="formLabelWidth"
         :label-position="formLabelPosition"
       >
-        <el-form-item label="名称" prop="name">
+        <el-form-item label="名称" prop="name" class="form-item--full">
           <el-input v-model="form.name" placeholder="请输入学习类型名称" />
         </el-form-item>
-        <el-form-item label="描述" prop="description">
+        <el-form-item label="描述" prop="description" class="form-item--full">
           <el-input
             v-model="form.description"
             type="textarea"

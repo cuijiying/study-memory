@@ -310,8 +310,8 @@ onMounted(async () => {
   <div class="study-plan-view page-panel">
     <div class="header page-panel__header">
       <div class="filters" :class="{ 'filters--mobile': isMobile }">
-        <div class="filter-item">
-          <label>学习类型:</label>
+        <div class="filter-item filter-item--full">
+          <label>学习类型</label>
           <el-select
             v-model="queryParams.learningTypeId"
             placeholder="全部"
@@ -328,7 +328,7 @@ onMounted(async () => {
         </div>
 
         <div class="filter-item">
-          <label>状态:</label>
+          <label>状态</label>
           <el-select v-model="queryParams.status" @change="handleFilterChange">
             <el-option label="全部" value="all" />
             <el-option label="未开始" value="not_started" />
@@ -338,7 +338,7 @@ onMounted(async () => {
         </div>
 
         <div class="filter-item">
-          <label>优先级:</label>
+          <label>优先级</label>
           <el-select v-model="queryParams.priority" @change="handleFilterChange">
             <el-option label="全部" value="all" />
             <el-option label="紧急" value="urgent" />
@@ -349,7 +349,7 @@ onMounted(async () => {
         </div>
 
         <div class="filter-item">
-          <label>单元:</label>
+          <label>单元</label>
           <el-input-number
             v-model="queryParams.unitNumber"
             :min="0"
@@ -360,7 +360,7 @@ onMounted(async () => {
         </div>
 
         <div class="filter-item">
-          <label>周次:</label>
+          <label>周次</label>
           <el-input-number
             v-model="queryParams.weekNumber"
             :min="0"
@@ -570,10 +570,10 @@ onMounted(async () => {
         :label-position="formLabelPosition"
         :rules="formRules"
       >
-        <el-form-item label="标题" prop="title" required>
+        <el-form-item label="标题" prop="title" required class="form-item--full">
           <el-input v-model="newPlan.title" placeholder="请输入标题" />
         </el-form-item>
-        <el-form-item label="学习类型" prop="learning_type_id" required>
+        <el-form-item label="学习类型" prop="learning_type_id" required class="form-item--full">
           <el-select v-model="newPlan.learning_type_id" placeholder="请选择学习类型" style="width: 100%">
             <el-option v-for="type in learningTypes" :key="type.id" :label="type.name" :value="type.id" />
           </el-select>
@@ -596,7 +596,7 @@ onMounted(async () => {
             style="width: 100%"
           />
         </el-form-item>
-        <el-form-item label="描述">
+        <el-form-item label="描述" class="form-item--full">
           <el-input v-model="newPlan.description" type="textarea" placeholder="请输入描述" />
         </el-form-item>
         <el-form-item label="开始时间">
@@ -656,10 +656,10 @@ onMounted(async () => {
         :label-position="formLabelPosition"
         :rules="formRules"
       >
-        <el-form-item label="标题" prop="title" required>
+        <el-form-item label="标题" prop="title" required class="form-item--full">
           <el-input v-model="selectedPlan.title" placeholder="请输入标题" />
         </el-form-item>
-        <el-form-item label="学习类型" prop="learning_type_id" required>
+        <el-form-item label="学习类型" prop="learning_type_id" required class="form-item--full">
           <el-select v-model="selectedPlan.learning_type_id" placeholder="请选择学习类型" style="width: 100%">
             <el-option v-for="type in learningTypes" :key="type.id" :label="type.name" :value="type.id" />
           </el-select>
@@ -682,7 +682,7 @@ onMounted(async () => {
             style="width: 100%"
           />
         </el-form-item>
-        <el-form-item label="描述">
+        <el-form-item label="描述" class="form-item--full">
           <el-input v-model="selectedPlan.description" type="textarea" placeholder="请输入描述" />
         </el-form-item>
         <el-form-item label="开始时间">
@@ -755,6 +755,34 @@ onMounted(async () => {
 
         .el-input-number {
           width: 120px;
+        }
+      }
+
+      @include mobile {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px 10px;
+        width: 100%;
+        align-items: stretch;
+
+        .filter-item {
+          flex-direction: column;
+          align-items: stretch;
+          min-width: 0;
+
+          label {
+            font-size: 13px;
+            white-space: normal;
+          }
+
+          .el-select,
+          .el-input-number {
+            width: 100%;
+          }
+        }
+
+        .filter-item--full {
+          grid-column: 1 / -1;
         }
       }
     }

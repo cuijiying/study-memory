@@ -301,7 +301,7 @@ onMounted(fetchIssues)
         :label-width="formLabelWidth"
         :label-position="formLabelPosition"
       >
-        <el-form-item label="标题" required>
+        <el-form-item label="标题" required class="form-item--full">
           <el-input v-model="currentIssue.title" placeholder="请输入标题" />
         </el-form-item>
         <el-form-item label="问题类型" required>
@@ -321,7 +321,7 @@ onMounted(fetchIssues)
             <el-option label="低" value="低" />
           </el-select>
         </el-form-item>
-        <el-form-item label="问题描述" required>
+        <el-form-item label="问题描述" required class="form-item--full">
           <el-input
             v-model="currentIssue.description"
             type="textarea"
