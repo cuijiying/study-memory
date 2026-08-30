@@ -1,26 +1,42 @@
 <script setup lang="ts">
-import type { StudyPlan } from '@/types'
+import type { StudyPlan, StudyPlanTreeRow, StudyPlanUnitGroup } from '@/types'
 import { useAuthUser } from '@/composables/useAuthUser'
 import { useBreakpoint } from '@/composables/useBreakpoint'
-import { usePaginationLayout, useResponsiveDialog } from '@/composables/useResponsiveDialog'
+import { useResponsiveDialog } from '@/composables/useResponsiveDialog'
 import { studyPlanService } from '@/services/studyPlanService'
 import { useLearningTypeStore } from '@/stores/learningType'
 
 const { requireUserId } = useAuthUser()
 const { isMobile } = useBreakpoint()
-const { paginationLayout } = usePaginationLayout()
 const { dialogWidth } = useResponsiveDialog('50%')
 const learningTypeStore = useLearningTypeStore()
 const { learningTypes } = storeToRefs(learningTypeStore)
 
+type StudyPlanEditForm = Omit<
+  StudyPlan,
+  'unit_number' | 'week_number' | 'learning_type_id' | 'start_time' | 'end_time'
+> & {
+  learning_type_id?: number
+  unit_number?: number
+  week_number?: number
+  start_time?: string
+  end_time?: string
+}
+
 const loading = ref(false)
 const showCreateDialog = ref(false)
 const showEditDialog = ref(false)
-const selectedPlan = ref<StudyPlan | null>(null)
+const selectedPlan = ref<StudyPlanEditForm | null>(null)
 const studyPlans = ref<StudyPlan[]>([])
-const currentPage = ref(1)
-const pageSize = ref(10)
-const total = ref(0)
+const treeData = ref<StudyPlanTreeRow[]>([])
+
+const queryParams = ref({
+  learningTypeId: undefined as number | undefined,
+  status: 'all' as 'all' | StudyPlan['status'],
+  priority: 'all' as 'all' | StudyPlan['priority'],
+  unitNumber: undefined as number | undefined,
+  weekNumber: undefined as number | undefined,
+})
 
 type TagType = 'success' | 'warning' | 'info' | 'primary' | 'danger'
 
@@ -29,9 +45,11 @@ const newPlan = ref({
   description: '',
   start_time: undefined as string | undefined,
   end_time: undefined as string | undefined,
-  status: 'pending' as const,
+  status: 'not_started' as const,
   priority: 'medium' as const,
   learning_type_id: undefined as number | undefined,
+  unit_number: undefined as number | undefined,
+  week_number: undefined as number | undefined,
 })
 
 const formRules = {
@@ -39,16 +57,50 @@ const formRules = {
   learning_type_id: [{ required: true, message: '请选择学习类型', trigger: 'change' }],
 }
 
+const isUnitRow = (row: StudyPlanTreeRow): row is StudyPlanUnitGroup => Boolean(row.isUnit)
+
+const getLearningTypeName = (row: StudyPlan) =>
+  row.learning_type_name || row.name || '-'
+
+const buildPlanTree = (plans: StudyPlan[]): StudyPlanTreeRow[] => {
+  const groups = new Map<number | 'unset', StudyPlan[]>()
+
+  for (const plan of plans) {
+    const key = plan.unit_number ?? 'unset'
+    if (!groups.has(key)) groups.set(key, [])
+    groups.get(key)!.push(plan)
+  }
+
+  const sortedKeys = [...groups.keys()].sort((a, b) => {
+    if (a === 'unset') return 1
+    if (b === 'unset') return -1
+    return a - b
+  })
+
+  return sortedKeys.map((key) => ({
+    id: `unit-${key}`,
+    isUnit: true as const,
+    title: key === 'unset' ? '未指定单元' : `第 ${key} 单元`,
+    unit_number: key === 'unset' ? null : key,
+    children: groups
+      .get(key)!
+      .sort((a, b) => (a.week_number ?? 0) - (b.week_number ?? 0)),
+  }))
+}
+
 const fetchStudyPlans = async () => {
   loading.value = true
   try {
     const userId = requireUserId()
-    const { data, total: totalCount } = await studyPlanService.list(userId, {
-      page: currentPage.value,
-      pageSize: pageSize.value,
+    const { data } = await studyPlanService.list(userId, {
+      learningTypeId: queryParams.value.learningTypeId,
+      status: queryParams.value.status,
+      priority: queryParams.value.priority,
+      unitNumber: queryParams.value.unitNumber,
+      weekNumber: queryParams.value.weekNumber,
     })
     studyPlans.value = data
-    total.value = totalCount
+    treeData.value = buildPlanTree(data)
   } catch (error) {
     if ((error as Error).message !== 'NOT_AUTHENTICATED') {
       ElMessage.error('获取学习计划列表失败')
@@ -59,22 +111,27 @@ const fetchStudyPlans = async () => {
   }
 }
 
+const handleFilterChange = () => {
+  fetchStudyPlans()
+}
+
 const handleCreate = async () => {
   try {
     const userId = requireUserId()
     await studyPlanService.create(userId, {
       title: newPlan.value.title,
       description: newPlan.value.description,
-      start_time: newPlan.value.start_time || '',
-      end_time: newPlan.value.end_time || '',
+      start_time: newPlan.value.start_time || null,
+      end_time: newPlan.value.end_time || null,
       status: newPlan.value.status,
       priority: newPlan.value.priority,
-      learning_type_id: newPlan.value.learning_type_id!,
+      learning_type_id: newPlan.value.learning_type_id ?? null,
+      unit_number: newPlan.value.unit_number ?? null,
+      week_number: newPlan.value.week_number ?? null,
     })
     showCreateDialog.value = false
     ElMessage.success('学习计划创建成功')
     resetForm()
-    currentPage.value = 1
     await fetchStudyPlans()
   } catch (error) {
     if ((error as Error).message !== 'NOT_AUTHENTICATED') {
@@ -106,9 +163,6 @@ const handleDelete = async (id: number) => {
     })
     await studyPlanService.remove(id)
     ElMessage.success('学习计划删除成功')
-    if (studyPlans.value.length === 1 && currentPage.value > 1) {
-      currentPage.value--
-    }
     await fetchStudyPlans()
   } catch (error) {
     if (error !== 'cancel') {
@@ -118,59 +172,92 @@ const handleDelete = async (id: number) => {
   }
 }
 
+const handleStatusToggle = async (plan: StudyPlan, val: string | number | boolean) => {
+  const checked = val === true
+  const newStatus = checked ? 'completed' : 'not_started'
+  if (plan.status === newStatus) return
+
+  try {
+    await studyPlanService.updateStatus(plan.id, newStatus)
+    plan.status = newStatus
+    ElMessage.success(checked ? '已标记为完成' : '已标记为待完成')
+  } catch (error) {
+    ElMessage.error('更新状态失败')
+    console.error(error)
+  }
+}
+
 const resetForm = () => {
   newPlan.value = {
     title: '',
     description: '',
     start_time: undefined,
     end_time: undefined,
-    status: 'pending',
+    status: 'not_started',
     priority: 'medium',
     learning_type_id: undefined,
+    unit_number: undefined,
+    week_number: undefined,
   }
 }
 
 const editPlan = (plan: StudyPlan) => {
-  selectedPlan.value = { ...plan }
+  selectedPlan.value = {
+    ...plan,
+    learning_type_id: plan.learning_type_id ?? undefined,
+    unit_number: plan.unit_number ?? undefined,
+    week_number: plan.week_number ?? undefined,
+    start_time: plan.start_time ?? undefined,
+    end_time: plan.end_time ?? undefined,
+  }
   showEditDialog.value = true
 }
 
 const getPriorityType = (priority: string): TagType => {
-  const types: Record<string, TagType> = { high: 'danger', medium: 'warning', low: 'info' }
+  const types: Record<string, TagType> = {
+    urgent: 'danger',
+    high: 'danger',
+    medium: 'warning',
+    low: 'info',
+  }
   return types[priority] || 'info'
 }
 
 const getStatusType = (status: string): TagType => {
   const types: Record<string, TagType> = {
-    pending: 'info',
+    not_started: 'info',
     in_progress: 'warning',
     completed: 'success',
   }
   return types[status] || 'info'
 }
 
-/** 优先级中文映射 */
-const getPriorityLabel = (priority: string) =>
-  priority === 'high' ? '高' : priority === 'medium' ? '中' : '低'
-
-/** 状态中文映射 */
-const getStatusLabel = (status: string) =>
-  status === 'pending' ? '待完成' : status === 'in_progress' ? '进行中' : '已完成'
-
-const handleSizeChange = (val: number) => {
-  pageSize.value = val
-  currentPage.value = 1
-  fetchStudyPlans()
+const getPriorityLabel = (priority: string) => {
+  const labels: Record<string, string> = {
+    urgent: '紧急',
+    high: '高',
+    medium: '中',
+    low: '低',
+  }
+  return labels[priority] || priority
 }
 
-const handleCurrentChange = (val: number) => {
-  currentPage.value = val
-  fetchStudyPlans()
+const getStatusLabel = (status: string) => {
+  const labels: Record<string, string> = {
+    not_started: '未开始',
+    in_progress: '进行中',
+    completed: '已完成',
+  }
+  return labels[status] || status
 }
 
-/** 表单 label 宽度：手机端顶部对齐，桌面端右侧对齐 */
 const formLabelWidth = computed(() => (isMobile.value ? undefined : '120px'))
 const formLabelPosition = computed(() => (isMobile.value ? 'top' : 'right'))
+
+/** 手机端折叠面板：按单元分组 */
+const mobileGroups = computed(() =>
+  treeData.value.filter((row): row is StudyPlanUnitGroup => isUnitRow(row))
+)
 
 onMounted(async () => {
   await learningTypeStore.fetchLearningTypes()
@@ -181,107 +268,208 @@ onMounted(async () => {
 <template>
   <div class="study-plan-view page-panel">
     <div class="header page-panel__header">
+      <div class="filters" :class="{ 'filters--mobile': isMobile }">
+        <div class="filter-item">
+          <label>学习类型:</label>
+          <el-select
+            v-model="queryParams.learningTypeId"
+            placeholder="全部"
+            clearable
+            @change="handleFilterChange"
+          >
+            <el-option
+              v-for="type in learningTypes"
+              :key="type.id"
+              :label="type.name"
+              :value="type.id"
+            />
+          </el-select>
+        </div>
+
+        <div class="filter-item">
+          <label>状态:</label>
+          <el-select v-model="queryParams.status" @change="handleFilterChange">
+            <el-option label="全部" value="all" />
+            <el-option label="未开始" value="not_started" />
+            <el-option label="进行中" value="in_progress" />
+            <el-option label="已完成" value="completed" />
+          </el-select>
+        </div>
+
+        <div class="filter-item">
+          <label>优先级:</label>
+          <el-select v-model="queryParams.priority" @change="handleFilterChange">
+            <el-option label="全部" value="all" />
+            <el-option label="紧急" value="urgent" />
+            <el-option label="高" value="high" />
+            <el-option label="中" value="medium" />
+            <el-option label="低" value="low" />
+          </el-select>
+        </div>
+
+        <div class="filter-item">
+          <label>单元:</label>
+          <el-input-number
+            v-model="queryParams.unitNumber"
+            :min="0"
+            placeholder="全部"
+            controls-position="right"
+            @change="handleFilterChange"
+          />
+        </div>
+
+        <div class="filter-item">
+          <label>周次:</label>
+          <el-input-number
+            v-model="queryParams.weekNumber"
+            :min="0"
+            placeholder="全部"
+            controls-position="right"
+            @change="handleFilterChange"
+          />
+        </div>
+      </div>
+
       <el-button type="primary" class="btn-block-mobile" @click="showCreateDialog = true">
         新增学习计划
       </el-button>
     </div>
 
-    <!-- 桌面端表格 -->
-    <el-table v-if="!isMobile" v-loading="loading" :data="studyPlans" style="width: 100%" border stripe>
-      <el-table-column prop="title" label="标题" align="center" />
+    <!-- 桌面端：按单元树形表格 -->
+    <el-table
+      v-if="!isMobile"
+      v-loading="loading"
+      :data="treeData"
+      row-key="id"
+      :tree-props="{ children: 'children' }"
+      default-expand-all
+      style="width: 100%"
+      border
+      stripe
+    >
+      <el-table-column label="计划" min-width="220" align="left">
+        <template #default="{ row }">
+          <div class="plan-title-cell">
+            <el-checkbox
+              v-if="!isUnitRow(row)"
+              :model-value="row.status === 'completed'"
+              @change="(val) => handleStatusToggle(row, val)"
+            />
+            <span :class="{ 'unit-group-title': isUnitRow(row) }">{{ row.title }}</span>
+            <el-tag v-if="!isUnitRow(row) && row.week_number != null" size="small" type="info">
+              第 {{ row.week_number }} 周
+            </el-tag>
+          </div>
+        </template>
+      </el-table-column>
       <el-table-column label="学习类型" align="center" width="120">
-        <template #default="{ row }">{{ row.name }}</template>
-      </el-table-column>
-      <el-table-column prop="description" label="描述" show-overflow-tooltip align="center" />
-      <el-table-column prop="start_time" label="开始时间" align="center">
         <template #default="{ row }">
-          {{ row.start_time ? new Date(row.start_time).toLocaleString() : '未设置' }}
+          {{ isUnitRow(row) ? '' : getLearningTypeName(row) }}
         </template>
       </el-table-column>
-      <el-table-column prop="end_time" label="结束时间" align="center">
+      <el-table-column label="描述" show-overflow-tooltip align="center">
         <template #default="{ row }">
-          {{ row.end_time ? new Date(row.end_time).toLocaleString() : '未设置' }}
+          {{ isUnitRow(row) ? '' : row.description }}
         </template>
       </el-table-column>
-      <el-table-column prop="priority" label="优先级" align="center">
+      <el-table-column label="开始时间" align="center" width="170">
         <template #default="{ row }">
-          <el-tag :type="getPriorityType(row.priority)">
+          <template v-if="!isUnitRow(row)">
+            {{ row.start_time ? new Date(row.start_time).toLocaleString() : '未设置' }}
+          </template>
+        </template>
+      </el-table-column>
+      <el-table-column label="结束时间" align="center" width="170">
+        <template #default="{ row }">
+          <template v-if="!isUnitRow(row)">
+            {{ row.end_time ? new Date(row.end_time).toLocaleString() : '未设置' }}
+          </template>
+        </template>
+      </el-table-column>
+      <el-table-column label="优先级" align="center" width="90">
+        <template #default="{ row }">
+          <el-tag v-if="!isUnitRow(row)" :type="getPriorityType(row.priority)">
             {{ getPriorityLabel(row.priority) }}
           </el-tag>
         </template>
       </el-table-column>
-      <el-table-column prop="status" label="状态" align="center">
+      <el-table-column label="状态" align="center" width="90">
         <template #default="{ row }">
-          <el-tag :type="getStatusType(row.status)">
+          <el-tag v-if="!isUnitRow(row)" :type="getStatusType(row.status)">
             {{ getStatusLabel(row.status) }}
           </el-tag>
         </template>
       </el-table-column>
       <el-table-column label="操作" width="140" align="center">
         <template #default="{ row }">
-          <el-button link type="primary" @click="editPlan(row)">编辑</el-button>
-          <el-button link type="danger" @click="handleDelete(row.id)">删除</el-button>
+          <template v-if="!isUnitRow(row)">
+            <el-button link type="primary" @click="editPlan(row)">编辑</el-button>
+            <el-button link type="danger" @click="handleDelete(row.id)">删除</el-button>
+          </template>
         </template>
       </el-table-column>
     </el-table>
 
-    <!-- 手机端卡片列表 -->
-    <div v-else v-loading="loading" class="mobile-card-list">
+    <!-- 手机端：按单元折叠 -->
+    <div v-else v-loading="loading" class="mobile-unit-list">
       <el-empty v-if="studyPlans.length === 0" description="暂无学习计划" />
-      <div v-for="row in studyPlans" :key="row.id" class="mobile-card">
-        <div class="mobile-card__header">
-          <span class="mobile-card__title">{{ row.title }}</span>
-          <div class="mobile-card__tags">
-            <el-tag size="small" :type="getPriorityType(row.priority)">
-              {{ getPriorityLabel(row.priority) }}
-            </el-tag>
-            <el-tag size="small" :type="getStatusType(row.status)">
-              {{ getStatusLabel(row.status) }}
-            </el-tag>
-          </div>
-        </div>
+      <el-collapse v-else>
+        <el-collapse-item
+          v-for="group in mobileGroups"
+          :key="group.id"
+          :title="group.title"
+          :name="group.id"
+        >
+          <div v-for="row in group.children" :key="row.id" class="mobile-card">
+            <div class="mobile-card__header">
+              <el-checkbox
+                :model-value="row.status === 'completed'"
+                @change="(val) => handleStatusToggle(row, val)"
+              />
+              <span class="mobile-card__title">{{ row.title }}</span>
+              <div class="mobile-card__tags">
+                <el-tag v-if="row.week_number != null" size="small" type="info">
+                  第 {{ row.week_number }} 周
+                </el-tag>
+                <el-tag size="small" :type="getPriorityType(row.priority)">
+                  {{ getPriorityLabel(row.priority) }}
+                </el-tag>
+                <el-tag size="small" :type="getStatusType(row.status)">
+                  {{ getStatusLabel(row.status) }}
+                </el-tag>
+              </div>
+            </div>
 
-        <div class="mobile-card__body">
-          <div class="mobile-card__row">
-            <span class="mobile-card__label">类型</span>
-            <span class="mobile-card__value">{{ row.name || '-' }}</span>
-          </div>
-          <div v-if="row.description" class="mobile-card__row">
-            <span class="mobile-card__label">描述</span>
-            <span class="mobile-card__value">{{ row.description }}</span>
-          </div>
-          <div class="mobile-card__row">
-            <span class="mobile-card__label">开始</span>
-            <span class="mobile-card__value">
-              {{ row.start_time ? new Date(row.start_time).toLocaleString() : '未设置' }}
-            </span>
-          </div>
-          <div class="mobile-card__row">
-            <span class="mobile-card__label">结束</span>
-            <span class="mobile-card__value">
-              {{ row.end_time ? new Date(row.end_time).toLocaleString() : '未设置' }}
-            </span>
-          </div>
-        </div>
+            <div class="mobile-card__body">
+              <div class="mobile-card__row">
+                <span class="mobile-card__label">类型</span>
+                <span class="mobile-card__value">{{ getLearningTypeName(row) }}</span>
+              </div>
+              <div v-if="row.description" class="mobile-card__row">
+                <span class="mobile-card__label">描述</span>
+                <span class="mobile-card__value">{{ row.description }}</span>
+              </div>
+              <div class="mobile-card__row">
+                <span class="mobile-card__label">开始</span>
+                <span class="mobile-card__value">
+                  {{ row.start_time ? new Date(row.start_time).toLocaleString() : '未设置' }}
+                </span>
+              </div>
+              <div class="mobile-card__row">
+                <span class="mobile-card__label">结束</span>
+                <span class="mobile-card__value">
+                  {{ row.end_time ? new Date(row.end_time).toLocaleString() : '未设置' }}
+                </span>
+              </div>
+            </div>
 
-        <div class="mobile-card__actions">
-          <el-button size="small" type="primary" @click="editPlan(row)">编辑</el-button>
-          <el-button size="small" type="danger" @click="handleDelete(row.id)">删除</el-button>
-        </div>
-      </div>
-    </div>
-
-    <div class="pagination-container" :class="{ 'pagination-container--mobile': isMobile }">
-      <el-pagination
-        v-model:current-page="currentPage"
-        v-model:page-size="pageSize"
-        :total="total"
-        :page-sizes="[10, 20, 50, 100]"
-        :layout="paginationLayout"
-        :small="isMobile"
-        @size-change="handleSizeChange"
-        @current-change="handleCurrentChange"
-      />
+            <div class="mobile-card__actions">
+              <el-button size="small" type="primary" @click="editPlan(row)">编辑</el-button>
+              <el-button size="small" type="danger" @click="handleDelete(row.id)">删除</el-button>
+            </div>
+          </div>
+        </el-collapse-item>
+      </el-collapse>
     </div>
 
     <!-- 新增 Dialog -->
@@ -299,6 +487,24 @@ onMounted(async () => {
           <el-select v-model="newPlan.learning_type_id" placeholder="请选择学习类型" style="width: 100%">
             <el-option v-for="type in learningTypes" :key="type.id" :label="type.name" :value="type.id" />
           </el-select>
+        </el-form-item>
+        <el-form-item label="单元">
+          <el-input-number
+            v-model="newPlan.unit_number"
+            :min="0"
+            placeholder="第几单元"
+            controls-position="right"
+            style="width: 100%"
+          />
+        </el-form-item>
+        <el-form-item label="周次">
+          <el-input-number
+            v-model="newPlan.week_number"
+            :min="0"
+            placeholder="第几周"
+            controls-position="right"
+            style="width: 100%"
+          />
         </el-form-item>
         <el-form-item label="描述">
           <el-input v-model="newPlan.description" type="textarea" placeholder="请输入描述" />
@@ -321,6 +527,7 @@ onMounted(async () => {
         </el-form-item>
         <el-form-item label="优先级">
           <el-select v-model="newPlan.priority" style="width: 100%">
+            <el-option label="紧急" value="urgent" />
             <el-option label="高" value="high" />
             <el-option label="中" value="medium" />
             <el-option label="低" value="low" />
@@ -328,7 +535,7 @@ onMounted(async () => {
         </el-form-item>
         <el-form-item label="状态">
           <el-select v-model="newPlan.status" style="width: 100%">
-            <el-option label="待完成" value="pending" />
+            <el-option label="未开始" value="not_started" />
             <el-option label="进行中" value="in_progress" />
             <el-option label="已完成" value="completed" />
           </el-select>
@@ -357,6 +564,24 @@ onMounted(async () => {
             <el-option v-for="type in learningTypes" :key="type.id" :label="type.name" :value="type.id" />
           </el-select>
         </el-form-item>
+        <el-form-item label="单元">
+          <el-input-number
+            v-model="selectedPlan.unit_number"
+            :min="0"
+            placeholder="第几单元"
+            controls-position="right"
+            style="width: 100%"
+          />
+        </el-form-item>
+        <el-form-item label="周次">
+          <el-input-number
+            v-model="selectedPlan.week_number"
+            :min="0"
+            placeholder="第几周"
+            controls-position="right"
+            style="width: 100%"
+          />
+        </el-form-item>
         <el-form-item label="描述">
           <el-input v-model="selectedPlan.description" type="textarea" placeholder="请输入描述" />
         </el-form-item>
@@ -378,6 +603,7 @@ onMounted(async () => {
         </el-form-item>
         <el-form-item label="优先级">
           <el-select v-model="selectedPlan.priority" style="width: 100%">
+            <el-option label="紧急" value="urgent" />
             <el-option label="高" value="high" />
             <el-option label="中" value="medium" />
             <el-option label="低" value="low" />
@@ -385,7 +611,7 @@ onMounted(async () => {
         </el-form-item>
         <el-form-item label="状态">
           <el-select v-model="selectedPlan.status" style="width: 100%">
-            <el-option label="待完成" value="pending" />
+            <el-option label="未开始" value="not_started" />
             <el-option label="进行中" value="in_progress" />
             <el-option label="已完成" value="completed" />
           </el-select>
@@ -402,7 +628,61 @@ onMounted(async () => {
 <style lang="scss" scoped>
 .study-plan-view {
   .header {
-    margin-bottom: 0;
+    margin-bottom: 20px;
+
+    .filters {
+      display: flex;
+      gap: 24px;
+      align-items: center;
+      flex-wrap: wrap;
+
+      .filter-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+
+        label {
+          font-size: 14px;
+          color: var(--app-text-secondary);
+          white-space: nowrap;
+        }
+
+        .el-select {
+          width: 140px;
+        }
+
+        .el-input-number {
+          width: 120px;
+        }
+      }
+    }
+  }
+
+  .plan-title-cell {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    .unit-group-title {
+      font-weight: 600;
+      color: var(--app-text-primary);
+    }
+  }
+
+  .mobile-unit-list {
+    .mobile-card {
+      margin-bottom: 12px;
+
+      &:last-child {
+        margin-bottom: 0;
+      }
+    }
+  }
+
+  .mobile-card__header {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
   }
 
   .mobile-card__tags {
@@ -410,12 +690,7 @@ onMounted(async () => {
     flex-wrap: wrap;
     gap: 6px;
     flex-shrink: 0;
-  }
-
-  .pagination-container {
-    margin-top: 20px;
-    display: flex;
-    justify-content: flex-end;
+    margin-left: auto;
   }
 }
 </style>

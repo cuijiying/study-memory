@@ -110,7 +110,7 @@ Vite 接入 `unplugin-auto-import` 与 `unplugin-vue-components`：
 |------|------|
 | Auth | `signInWithPassword` / `signUp` / `signOut` / `getUser` / `onAuthStateChange` |
 | 数据 | `.from().select / insert / update / delete`，分页用 `.range()`，筛选用 `.eq / .neq / .or` |
-| 联表 | 笔记列表读视图 `study_records_types`，计划列表读 `study_plan_types` |
+| 联表 | 笔记列表读视图 `study_records_types`，计划列表读 `study_plan_with_type` |
 | 多租户 | 笔记与计划查询均带 `user_id`，与当前登录用户绑定 |
 
 客户端只使用 **Publishable Key**（`VITE_SUPABASE_PUBLISHABLE_KEY`），禁止把 service role 密钥打进前端。生产环境建议在 Supabase 开启 **Row Level Security (RLS)**，用 `auth.uid()` 限制读写范围。
@@ -197,8 +197,11 @@ Git Push → Vercel Build (Vite) → dist 静态资源 → CDN
 
 **学习计划**
 
-- 绑定学习类型、优先级（高 / 中 / 低）、状态（待完成 / 进行中 / 已完成）
-- 起止时间、分页 CRUD
+- 绑定学习类型、优先级（紧急 / 高 / 中 / 低）、状态（未开始 / 进行中 / 已完成）
+- 支持单元号、周次录入，列表按单元树形分组展示
+- 计划前复选框快速标记完成 / 待完成
+- 支持按学习类型、状态、优先级、单元、周次筛选
+- 起止时间 CRUD
 
 **学习类型**
 
@@ -243,7 +246,7 @@ Git Push → Vercel Build (Vite) → dist 静态资源 → CDN
 
 **`study_records_types`**：笔记 + 类型名称的视图，列表页使用。
 
-**`study_plan`** / **`study_plan_types`**：计划主表与带类型名的视图；含 `title`、`description`、`start_time`、`end_time`、`status`、`priority`、`learning_type_id`、`user_id`。
+**`study_plan`** / **`study_plan_with_type`**：计划主表与带类型名的视图；含 `title`、`description`、`start_time`、`end_time`、`status`（`not_started` / `in_progress` / `completed`）、`priority`（`low` / `medium` / `high` / `urgent`）、`unit_number`、`week_number`、`learning_type_id`、`user_id`；视图额外提供 `learning_type_name`、`learning_type_description`。
 
 **`learning_types`**：`id`、`name`、`description`。
 
@@ -312,7 +315,7 @@ pnpm preview      # 预览 dist
 
 1. 在 Supabase 打开 Email 登录，按需开启邮箱确认。
 2. 为业务表配置 RLS，策略中使用 `auth.uid() = user_id`。
-3. 视图 `study_records_types`、`study_plan_types` 需包含列表所需字段（含类型 `name`）。
+3. 视图 `study_records_types`、`study_plan_with_type` 需包含列表所需字段（含类型 `learning_type_name`）。
 4. 前端仅暴露 Publishable Key；密钥轮换后同步更新本地 `.env` 与 Vercel 环境变量。
 
 ---
