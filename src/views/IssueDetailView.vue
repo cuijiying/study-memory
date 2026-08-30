@@ -3,10 +3,12 @@ import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { issueService, type Issue } from '@/services/issueService'
 import { ElMessage } from 'element-plus'
+import { useAuthUser } from '@/composables/useAuthUser'
 import { useMobileForm } from '@/composables/useMobileForm'
 
 const route = useRoute()
 const router = useRouter()
+const { requireUserId } = useAuthUser()
 const { formLabelWidth, formLabelPosition, formClass } = useMobileForm('100px')
 const loading = ref(false)
 const issue = ref<Issue | null>(null)
@@ -24,8 +26,9 @@ const issueTypes = [
 const fetchIssue = async () => {
   loading.value = true
   try {
+    const userId = requireUserId()
     const issueId = parseInt(route.params.id as string)
-    issue.value = await issueService.getIssueById(issueId)
+    issue.value = await issueService.getIssueById(userId, issueId)
   } catch (error) {
     ElMessage.error('获取问题详情失败')
     console.error(error)
@@ -38,7 +41,8 @@ const handleUpdate = async () => {
   if (!issue.value) return
 
   try {
-    await issueService.updateIssue(issue.value.issue_id, {
+    const userId = requireUserId()
+    await issueService.updateIssue(userId, issue.value.issue_id, {
       title: issue.value.title,
       issue_type: issue.value.issue_type,
       description: issue.value.description,
@@ -60,7 +64,8 @@ const handleDelete = async () => {
   if (!issue.value) return
 
   try {
-    await issueService.deleteIssue(issue.value.issue_id)
+    const userId = requireUserId()
+    await issueService.deleteIssue(userId, issue.value.issue_id)
     ElMessage.success('删除成功')
     router.push('/issues')
   } catch (error) {

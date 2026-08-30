@@ -2,6 +2,7 @@ import { supabase } from '@/lib/supabase'
 
 export interface Issue {
   issue_id: number
+  user_id?: string
   title: string
   issue_type: string
   description: string
@@ -15,55 +16,62 @@ export interface Issue {
   resolution_time: string | null
 }
 
+type IssueInput = Omit<Issue, 'issue_id' | 'created_at' | 'updated_at' | 'user_id'>
+type IssueUpdate = Partial<IssueInput>
+
 export const issueService = {
-  async getIssues() {
+  async getIssues(userId: string) {
     const { data, error } = await supabase
       .from('issues')
       .select('*')
+      .eq('user_id', userId)
       .order('created_at', { ascending: false })
-    
+
     if (error) throw error
     return data as Issue[]
   },
 
-  async getIssueById(id: number) {
+  async getIssueById(userId: string, id: number) {
     const { data, error } = await supabase
       .from('issues')
       .select('*')
       .eq('issue_id', id)
+      .eq('user_id', userId)
       .single()
-    
+
     if (error) throw error
     return data as Issue
   },
 
-  async createIssue(issue: Omit<Issue, 'issue_id' | 'created_at' | 'updated_at'>) {
+  async createIssue(userId: string, issue: IssueInput) {
     const { data, error } = await supabase
       .from('issues')
-      .insert([issue])
+      .insert([{ ...issue, user_id: userId }])
       .select()
-    
+
     if (error) throw error
     return data[0] as Issue
   },
 
-  async updateIssue(id: number, issue: Partial<Omit<Issue, 'issue_id' | 'created_at' | 'updated_at'>>) {
+  async updateIssue(userId: string, id: number, issue: IssueUpdate) {
     const { data, error } = await supabase
       .from('issues')
       .update(issue)
       .eq('issue_id', id)
+      .eq('user_id', userId)
       .select()
-    
+
     if (error) throw error
     return data[0] as Issue
   },
 
-  async deleteIssue(id: number) {
+  async deleteIssue(userId: string, id: number) {
     const { error } = await supabase
       .from('issues')
       .delete()
       .eq('issue_id', id)
-    
+      .eq('user_id', userId)
+
     if (error) throw error
-  }
-} 
+  },
+}

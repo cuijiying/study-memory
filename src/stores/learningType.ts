@@ -1,20 +1,31 @@
 import { supabase } from '@/lib/supabase'
+import { useAuthStore } from '@/stores/auth'
 import type { LearningType } from '@/types'
 
 export const useLearningTypeStore = defineStore('learningType', () => {
+  const authStore = useAuthStore()
   const learningTypes = ref<LearningType[]>([])
   const loading = ref(false)
   const error = ref<string | null>(null)
 
-  // 获取所有学习类型
+  function requireUserId(): string {
+    const userId = authStore.userId
+    if (!userId) {
+      throw new Error('NOT_AUTHENTICATED')
+    }
+    return userId
+  }
+
   async function fetchLearningTypes() {
     try {
       loading.value = true
       error.value = null
-      
+
+      const userId = requireUserId()
       const { data, error: err } = await supabase
         .from('learning_types')
         .select('*')
+        .eq('user_id', userId)
         .order('created_at', { ascending: false })
 
       if (err) throw err
@@ -26,15 +37,15 @@ export const useLearningTypeStore = defineStore('learningType', () => {
     }
   }
 
-  // 创建学习类型
   async function createLearningType(type: Pick<LearningType, 'name' | 'description'>) {
     try {
       loading.value = true
       error.value = null
 
+      const userId = requireUserId()
       const { data, error: err } = await supabase
         .from('learning_types')
-        .insert([type])
+        .insert([{ ...type, user_id: userId }])
         .select()
         .single()
 
@@ -49,16 +60,17 @@ export const useLearningTypeStore = defineStore('learningType', () => {
     }
   }
 
-  // 更新学习类型
   async function updateLearningType(id: number, type: Partial<Pick<LearningType, 'name' | 'description'>>) {
     try {
       loading.value = true
       error.value = null
 
+      const userId = requireUserId()
       const { data, error: err } = await supabase
         .from('learning_types')
         .update(type)
         .eq('id', id)
+        .eq('user_id', userId)
         .select()
         .single()
 
@@ -76,16 +88,17 @@ export const useLearningTypeStore = defineStore('learningType', () => {
     }
   }
 
-  // 删除学习类型
   async function deleteLearningType(id: number) {
     try {
       loading.value = true
       error.value = null
 
+      const userId = requireUserId()
       const { error: err } = await supabase
         .from('learning_types')
         .delete()
         .eq('id', id)
+        .eq('user_id', userId)
 
       if (err) throw err
       learningTypes.value = learningTypes.value.filter(t => t.id !== id)
@@ -104,6 +117,6 @@ export const useLearningTypeStore = defineStore('learningType', () => {
     fetchLearningTypes,
     createLearningType,
     updateLearningType,
-    deleteLearningType
+    deleteLearningType,
   }
-}) 
+})

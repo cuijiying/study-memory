@@ -53,6 +53,7 @@ export type StudyPlanTreeRow = StudyPlanUnitGroup | (StudyPlan & { isUnit?: fals
 
 export interface LearningType {
   id: number
+  user_id?: string
   name: string
   description?: string
   created_at: string

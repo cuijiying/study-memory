@@ -2,10 +2,12 @@
 import { ref, onMounted } from 'vue'
 import { issueService, type Issue } from '@/services/issueService'
 import { ElMessage } from 'element-plus'
+import { useAuthUser } from '@/composables/useAuthUser'
 import { useBreakpoint } from '@/composables/useBreakpoint'
 import { usePaginationLayout } from '@/composables/useResponsiveDialog'
 import { useMobileForm } from '@/composables/useMobileForm'
 
+const { requireUserId } = useAuthUser()
 const { isMobile } = useBreakpoint()
 const { paginationLayout } = usePaginationLayout()
 const { formLabelWidth, formLabelPosition, formClass, dialogWidth, dialogFullscreen, dialogClass } =
@@ -42,7 +44,8 @@ const issueTypes = [
 const fetchIssues = async () => {
   loading.value = true
   try {
-    issues.value = await issueService.getIssues()
+    const userId = requireUserId()
+    issues.value = await issueService.getIssues(userId)
     total.value = issues.value.length
   } catch (error) {
     ElMessage.error('获取问题列表失败')
@@ -54,7 +57,8 @@ const fetchIssues = async () => {
 
 const handleCreateIssue = async () => {
   try {
-    await issueService.createIssue(currentIssue.value as any)
+    const userId = requireUserId()
+    await issueService.createIssue(userId, currentIssue.value as Omit<Issue, 'issue_id' | 'created_at' | 'updated_at' | 'user_id'>)
     ElMessage.success('创建成功')
     dialogVisible.value = false
     currentIssue.value = {
@@ -76,7 +80,8 @@ const handleCreateIssue = async () => {
 
 const handleUpdateStatus = async (issue: Issue, newStatus: Issue['status']) => {
   try {
-    await issueService.updateIssue(issue.issue_id, { status: newStatus })
+    const userId = requireUserId()
+    await issueService.updateIssue(userId, issue.issue_id, { status: newStatus })
     ElMessage.success('状态更新成功')
     await fetchIssues()
   } catch (error) {
@@ -95,7 +100,8 @@ const handleUpdate = async () => {
   if (!currentIssue.value.issue_id) return
 
   try {
-    await issueService.updateIssue(currentIssue.value.issue_id, {
+    const userId = requireUserId()
+    await issueService.updateIssue(userId, currentIssue.value.issue_id, {
       title: currentIssue.value.title,
       issue_type: currentIssue.value.issue_type,
       description: currentIssue.value.description,
@@ -127,7 +133,8 @@ const handleDelete = async (issueId: number) => {
     cancelButtonText: '取消',
     type: 'warning',
   }).then(async () => {
-    await issueService.deleteIssue(issueId)
+    const userId = requireUserId()
+    await issueService.deleteIssue(userId, issueId)
     ElMessage.success('删除成功')
     await fetchIssues()
   }).catch(() => {
