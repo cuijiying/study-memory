@@ -3,14 +3,15 @@ import { ref, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useLearningTypeStore } from '@/stores/learningType'
 import { useBreakpoint } from '@/composables/useBreakpoint'
-import { useResponsiveDialog } from '@/composables/useResponsiveDialog'
+import { useMobileForm } from '@/composables/useMobileForm'
 import type { LearningType } from '@/types'
 import type { FormInstance, FormRules } from 'element-plus'
 
 const store = useLearningTypeStore()
 const { learningTypes, loading, error } = storeToRefs(store)
 const { isMobile } = useBreakpoint()
-const { dialogWidth } = useResponsiveDialog('500px')
+const { formLabelWidth, formLabelPosition, formClass, dialogWidth, dialogFullscreen, dialogClass } =
+  useMobileForm('80px', '500px')
 
 // 表单相关
 const dialogVisible = ref(false)
@@ -153,13 +154,17 @@ const handleDelete = async (row: LearningType) => {
       v-model="dialogVisible"
       :title="isEdit ? '编辑学习类型' : '添加学习类型'"
       :width="dialogWidth"
+      :fullscreen="dialogFullscreen"
+      :class="dialogClass"
+      destroy-on-close
     >
       <el-form
         ref="formRef"
         :model="form"
         :rules="rules"
-        :label-width="isMobile ? undefined : '80px'"
-        :label-position="isMobile ? 'top' : 'right'"
+        :class="formClass"
+        :label-width="formLabelWidth"
+        :label-position="formLabelPosition"
       >
         <el-form-item label="名称" prop="name">
           <el-input v-model="form.name" placeholder="请输入学习类型名称" />

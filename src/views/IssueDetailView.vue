@@ -3,11 +3,11 @@ import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { issueService, type Issue } from '@/services/issueService'
 import { ElMessage } from 'element-plus'
-import { useBreakpoint } from '@/composables/useBreakpoint'
+import { useMobileForm } from '@/composables/useMobileForm'
 
 const route = useRoute()
 const router = useRouter()
-const { isMobile } = useBreakpoint()
+const { formLabelWidth, formLabelPosition, formClass } = useMobileForm('100px')
 const loading = ref(false)
 const issue = ref<Issue | null>(null)
 const isEditing = ref(false)
@@ -88,8 +88,9 @@ onMounted(fetchIssue)
     <template v-if="issue">
       <el-form
         :model="issue"
-        :label-width="isMobile ? undefined : '100px'"
-        :label-position="isMobile ? 'top' : 'right'"
+        :class="formClass"
+        :label-width="formLabelWidth"
+        :label-position="formLabelPosition"
       >
         <el-form-item label="标题">
           <el-input v-if="isEditing" v-model="issue.title" />

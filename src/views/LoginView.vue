@@ -71,7 +71,7 @@ const goToRegister = () => {
       :model="loginForm"
       :rules="loginRules"
       label-position="top"
-      class="auth-form"
+      class="auth-form mobile-form"
       @keyup.enter="handleLogin(loginFormRef)"
     >
       <el-form-item label="用户名" prop="username">

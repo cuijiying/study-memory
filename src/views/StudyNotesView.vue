@@ -3,7 +3,8 @@ import type { FormInstance, FormRules } from 'element-plus'
 import { useAuthUser } from '@/composables/useAuthUser'
 import { useTableHeight } from '@/composables/useTableHeight'
 import { useBreakpoint } from '@/composables/useBreakpoint'
-import { usePaginationLayout, useResponsiveDialog } from '@/composables/useResponsiveDialog'
+import { usePaginationLayout } from '@/composables/useResponsiveDialog'
+import { useMobileForm } from '@/composables/useMobileForm'
 import { studyRecordService } from '@/services/studyRecordService'
 import { useLearningTypeStore } from '@/stores/learningType'
 import type { StudyRecord } from '@/types'
@@ -13,7 +14,8 @@ const { requireUserId } = useAuthUser()
 const { tableHeight } = useTableHeight()
 const { isMobile } = useBreakpoint()
 const { paginationLayout } = usePaginationLayout()
-const { dialogWidth } = useResponsiveDialog('500px')
+const { formLabelWidth, formLabelPosition, formClass, dialogWidth, dialogFullscreen, dialogClass } =
+  useMobileForm('100px', '500px')
 const learningTypeStore = useLearningTypeStore()
 const { learningTypes } = storeToRefs(learningTypeStore)
 
@@ -348,13 +350,17 @@ onMounted(async () => {
       v-model="dialogVisible"
       :title="isEdit ? '编辑笔记' : '新增笔记'"
       :width="dialogWidth"
+      :fullscreen="dialogFullscreen"
+      :class="dialogClass"
+      destroy-on-close
     >
       <el-form
         ref="formRef"
         :model="formData"
         :rules="rules"
-        :label-width="isMobile ? '80px' : '100px'"
-        :label-position="isMobile ? 'top' : 'right'"
+        :class="formClass"
+        :label-width="formLabelWidth"
+        :label-position="formLabelPosition"
       >
         <el-form-item label="学习类型" prop="learning_type_id">
           <el-select v-model="formData.learning_type_id" placeholder="请选择学习类型" style="width: 100%">
@@ -377,8 +383,10 @@ onMounted(async () => {
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="dialogVisible = false">取消</el-button>
-        <el-button type="primary" @click="handleSave">确定</el-button>
+        <div class="dialog-footer">
+          <el-button @click="dialogVisible = false">取消</el-button>
+          <el-button type="primary" @click="handleSave">确定</el-button>
+        </div>
       </template>
     </el-dialog>
   </div>

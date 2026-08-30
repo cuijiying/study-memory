@@ -192,6 +192,10 @@ body {
   width: 100% !important;
 }
 
+.filters--mobile .el-input-number {
+  width: 100% !important;
+}
+
 /** 移动端全宽按钮 */
 .btn-block-mobile {
   width: 100%;
@@ -200,5 +204,137 @@ body {
 @media (min-width: 768px) {
   .btn-block-mobile {
     width: auto;
+  }
+}
+
+/* ========== 移动端表单与 Dialog 全局适配 ========== */
+
+@media (max-width: 767px) {
+  /** 页面内表单（非弹框） */
+  .page-panel .mobile-form.el-form .el-form-item,
+  .page-panel .el-form.mobile-form .el-form-item {
+    margin-bottom: 18px;
+  }
+
+  .mobile-form.el-form .el-form-item__label {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--app-text-secondary);
+    line-height: 1.4;
+    padding-bottom: 6px;
+    margin-bottom: 0;
+  }
+
+  .mobile-form.el-form .el-input,
+  .mobile-form.el-form .el-select,
+  .mobile-form.el-form .el-textarea,
+  .mobile-form.el-form .el-date-editor,
+  .mobile-form.el-form .el-input-number {
+    width: 100% !important;
+  }
+
+  .mobile-form.el-form .el-textarea__inner {
+    min-height: 88px;
+  }
+
+  .mobile-form.el-form .el-input__inner,
+  .mobile-form.el-form .el-textarea__inner {
+    font-size: 16px; /* 防止 iOS 输入框聚焦自动缩放 */
+  }
+
+  /** 弹框：接近全屏、内容区可滚动、底部按钮纵向全宽 */
+  .responsive-dialog.el-dialog {
+    --el-dialog-width: 100% !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    border-radius: 0;
+    max-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .responsive-dialog.el-dialog.is-fullscreen {
+    border-radius: 0;
+  }
+
+  .responsive-dialog .el-dialog__header {
+    flex-shrink: 0;
+    padding: 16px 16px 12px;
+    padding-top: max(16px, env(safe-area-inset-top));
+    margin-right: 0;
+  }
+
+  .responsive-dialog .el-dialog__title {
+    font-size: 17px;
+    font-weight: 600;
+    line-height: 1.4;
+    padding-right: 28px;
+  }
+
+  .responsive-dialog .el-dialog__headerbtn {
+    top: max(14px, env(safe-area-inset-top));
+    right: 12px;
+    width: 36px;
+    height: 36px;
+  }
+
+  .responsive-dialog .el-dialog__body {
+    flex: 1;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: 4px 16px 16px;
+  }
+
+  .responsive-dialog .el-dialog__footer {
+    flex-shrink: 0;
+    padding: 12px 16px;
+    padding-bottom: max(12px, env(safe-area-inset-bottom));
+    border-top: 1px solid var(--app-border);
+  }
+
+  .responsive-dialog .el-dialog__footer .dialog-footer,
+  .responsive-dialog .el-dialog__footer {
+    display: flex;
+    flex-direction: column-reverse;
+    gap: 10px;
+    width: 100%;
+  }
+
+  .responsive-dialog .el-dialog__footer .el-button {
+    width: 100%;
+    margin: 0 !important;
+    height: 44px;
+    font-size: 16px;
+  }
+
+  /** 页面内详情/编辑表单 */
+  .page-panel > .el-form .el-form-item {
+    margin-bottom: 18px;
+  }
+
+  .page-panel > .el-form .el-input,
+  .page-panel > .el-form .el-select,
+  .page-panel > .el-form .el-textarea,
+  .page-panel > .el-form .el-date-editor {
+    width: 100% !important;
+  }
+
+  .page-panel > .el-form .el-input__inner,
+  .page-panel > .el-form .el-textarea__inner {
+    font-size: 16px;
+  }
+}
+
+@media (min-width: 768px) {
+  .responsive-dialog.el-dialog {
+    max-height: 85vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .responsive-dialog .el-dialog__body {
+    flex: 1;
+    overflow-y: auto;
   }
 }

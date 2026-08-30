@@ -2,13 +2,14 @@
 import type { StudyPlan, StudyPlanTreeRow, StudyPlanUnitGroup } from '@/types'
 import { useAuthUser } from '@/composables/useAuthUser'
 import { useBreakpoint } from '@/composables/useBreakpoint'
-import { useResponsiveDialog } from '@/composables/useResponsiveDialog'
+import { useMobileForm } from '@/composables/useMobileForm'
 import { studyPlanService } from '@/services/studyPlanService'
 import { useLearningTypeStore } from '@/stores/learningType'
 
 const { requireUserId } = useAuthUser()
 const { isMobile } = useBreakpoint()
-const { dialogWidth } = useResponsiveDialog('50%')
+const { formLabelWidth, formLabelPosition, formClass, dialogWidth, dialogFullscreen, dialogClass } =
+  useMobileForm('120px', '50%')
 const learningTypeStore = useLearningTypeStore()
 const { learningTypes } = storeToRefs(learningTypeStore)
 
@@ -26,6 +27,7 @@ type StudyPlanEditForm = Omit<
 const loading = ref(false)
 const showCreateDialog = ref(false)
 const showEditDialog = ref(false)
+const createDialogTitle = ref('新增学习计划')
 const selectedPlan = ref<StudyPlanEditForm | null>(null)
 const studyPlans = ref<StudyPlan[]>([])
 const treeData = ref<StudyPlanTreeRow[]>([])
@@ -40,7 +42,7 @@ const queryParams = ref({
 
 type TagType = 'success' | 'warning' | 'info' | 'primary' | 'danger'
 
-const newPlan = ref({
+const emptyPlanForm = () => ({
   title: '',
   description: '',
   start_time: undefined as string | undefined,
@@ -52,12 +54,63 @@ const newPlan = ref({
   week_number: undefined as number | undefined,
 })
 
+const newPlan = ref(emptyPlanForm())
+
 const formRules = {
   title: [{ required: true, message: '请输入标题', trigger: 'blur' }],
   learning_type_id: [{ required: true, message: '请选择学习类型', trigger: 'change' }],
 }
 
 const isUnitRow = (row: StudyPlanTreeRow): row is StudyPlanUnitGroup => Boolean(row.isUnit)
+
+/** 是否可在该单元/计划下快速添加 */
+const canAddUnder = (row: StudyPlanTreeRow) => {
+  if (isUnitRow(row)) return row.unit_number != null
+  return row.unit_number != null || row.week_number != null
+}
+
+const fillPlanFromTemplate = (template: StudyPlan) => ({
+  title: '',
+  description: template.description,
+  start_time: template.start_time ?? undefined,
+  end_time: template.end_time ?? undefined,
+  status: 'not_started' as const,
+  priority: template.priority,
+  learning_type_id: template.learning_type_id ?? undefined,
+  unit_number: template.unit_number ?? undefined,
+  week_number: template.week_number ?? undefined,
+})
+
+const openCreateDialog = (source?: StudyPlan | StudyPlanUnitGroup) => {
+  newPlan.value = emptyPlanForm()
+  createDialogTitle.value = '新增学习计划'
+
+  if (!source) {
+    showCreateDialog.value = true
+    return
+  }
+
+  if (isUnitRow(source)) {
+    if (source.unit_number == null) {
+      showCreateDialog.value = true
+      return
+    }
+    createDialogTitle.value = `在第 ${source.unit_number} 单元下新增计划`
+    newPlan.value.unit_number = source.unit_number
+    const template = source.children[0]
+    if (template) {
+      newPlan.value = { ...fillPlanFromTemplate(template), unit_number: source.unit_number }
+    }
+  } else {
+    createDialogTitle.value =
+      source.unit_number != null
+        ? `在第 ${source.unit_number} 单元下新增计划`
+        : '新增学习计划'
+    newPlan.value = fillPlanFromTemplate(source)
+  }
+
+  showCreateDialog.value = true
+}
 
 const getLearningTypeName = (row: StudyPlan) =>
   row.learning_type_name || row.name || '-'
@@ -188,17 +241,8 @@ const handleStatusToggle = async (plan: StudyPlan, val: string | number | boolea
 }
 
 const resetForm = () => {
-  newPlan.value = {
-    title: '',
-    description: '',
-    start_time: undefined,
-    end_time: undefined,
-    status: 'not_started',
-    priority: 'medium',
-    learning_type_id: undefined,
-    unit_number: undefined,
-    week_number: undefined,
-  }
+  newPlan.value = emptyPlanForm()
+  createDialogTitle.value = '新增学习计划'
 }
 
 const editPlan = (plan: StudyPlan) => {
@@ -250,9 +294,6 @@ const getStatusLabel = (status: string) => {
   }
   return labels[status] || status
 }
-
-const formLabelWidth = computed(() => (isMobile.value ? undefined : '120px'))
-const formLabelPosition = computed(() => (isMobile.value ? 'top' : 'right'))
 
 /** 手机端折叠面板：按单元分组 */
 const mobileGroups = computed(() =>
@@ -330,7 +371,7 @@ onMounted(async () => {
         </div>
       </div>
 
-      <el-button type="primary" class="btn-block-mobile" @click="showCreateDialog = true">
+      <el-button type="primary" class="btn-block-mobile" @click="openCreateDialog()">
         新增学习计划
       </el-button>
     </div>
@@ -350,15 +391,28 @@ onMounted(async () => {
       <el-table-column label="计划" min-width="220" align="left">
         <template #default="{ row }">
           <div class="plan-title-cell">
-            <el-checkbox
-              v-if="!isUnitRow(row)"
-              :model-value="row.status === 'completed'"
-              @change="(val) => handleStatusToggle(row, val)"
-            />
-            <span :class="{ 'unit-group-title': isUnitRow(row) }">{{ row.title }}</span>
-            <el-tag v-if="!isUnitRow(row) && row.week_number != null" size="small" type="info">
-              第 {{ row.week_number }} 周
-            </el-tag>
+            <template v-if="isUnitRow(row)">
+              <span class="unit-group-title">{{ row.title }}</span>
+              <el-button
+                v-if="canAddUnder(row)"
+                link
+                type="primary"
+                size="small"
+                @click="openCreateDialog(row)"
+              >
+                添加计划
+              </el-button>
+            </template>
+            <template v-else>
+              <el-checkbox
+                :model-value="row.status === 'completed'"
+                @change="(val) => handleStatusToggle(row, val)"
+              />
+              <span>{{ row.title }}</span>
+              <el-tag v-if="row.week_number != null" size="small" type="info">
+                第 {{ row.week_number }} 周
+              </el-tag>
+            </template>
           </div>
         </template>
       </el-table-column>
@@ -400,9 +454,17 @@ onMounted(async () => {
           </el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="操作" width="140" align="center">
+      <el-table-column label="操作" width="200" align="center">
         <template #default="{ row }">
           <template v-if="!isUnitRow(row)">
+            <!-- <el-button
+              v-if="canAddUnder(row)"
+              link
+              type="primary"
+              @click="openCreateDialog(row)"
+            >
+              添加
+            </el-button> -->
             <el-button link type="primary" @click="editPlan(row)">编辑</el-button>
             <el-button link type="danger" @click="handleDelete(row.id)">删除</el-button>
           </template>
@@ -417,9 +479,22 @@ onMounted(async () => {
         <el-collapse-item
           v-for="group in mobileGroups"
           :key="group.id"
-          :title="group.title"
           :name="group.id"
         >
+          <template #title>
+            <div class="collapse-unit-header">
+              <span>{{ group.title }}</span>
+              <el-button
+                v-if="canAddUnder(group)"
+                link
+                type="primary"
+                size="small"
+                @click.stop="openCreateDialog(group)"
+              >
+                添加计划
+              </el-button>
+            </div>
+          </template>
           <div v-for="row in group.children" :key="row.id" class="mobile-card">
             <div class="mobile-card__header">
               <el-checkbox
@@ -464,6 +539,13 @@ onMounted(async () => {
             </div>
 
             <div class="mobile-card__actions">
+              <!-- <el-button
+                v-if="canAddUnder(row)"
+                size="small"
+                @click="openCreateDialog(row)"
+              >
+                添加
+              </el-button> -->
               <el-button size="small" type="primary" @click="editPlan(row)">编辑</el-button>
               <el-button size="small" type="danger" @click="handleDelete(row.id)">删除</el-button>
             </div>
@@ -473,9 +555,17 @@ onMounted(async () => {
     </div>
 
     <!-- 新增 Dialog -->
-    <el-dialog v-model="showCreateDialog" title="新增学习计划" :width="dialogWidth">
+    <el-dialog
+      v-model="showCreateDialog"
+      :title="createDialogTitle"
+      :width="dialogWidth"
+      :fullscreen="dialogFullscreen"
+      :class="dialogClass"
+      destroy-on-close
+    >
       <el-form
         :model="newPlan"
+        :class="formClass"
         :label-width="formLabelWidth"
         :label-position="formLabelPosition"
         :rules="formRules"
@@ -542,16 +632,26 @@ onMounted(async () => {
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="showCreateDialog = false">取消</el-button>
-        <el-button type="primary" @click="handleCreate">确定</el-button>
+        <div class="dialog-footer">
+          <el-button @click="showCreateDialog = false">取消</el-button>
+          <el-button type="primary" @click="handleCreate">确定</el-button>
+        </div>
       </template>
     </el-dialog>
 
     <!-- 编辑 Dialog -->
-    <el-dialog v-model="showEditDialog" title="编辑学习计划" :width="dialogWidth">
+    <el-dialog
+      v-model="showEditDialog"
+      title="编辑学习计划"
+      :width="dialogWidth"
+      :fullscreen="dialogFullscreen"
+      :class="dialogClass"
+      destroy-on-close
+    >
       <el-form
         v-if="selectedPlan"
         :model="selectedPlan"
+        :class="formClass"
         :label-width="formLabelWidth"
         :label-position="formLabelPosition"
         :rules="formRules"
@@ -618,8 +718,10 @@ onMounted(async () => {
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="showEditDialog = false">取消</el-button>
-        <el-button type="primary" @click="handleEdit">确定</el-button>
+        <div class="dialog-footer">
+          <el-button @click="showEditDialog = false">取消</el-button>
+          <el-button type="primary" @click="handleEdit">确定</el-button>
+        </div>
       </template>
     </el-dialog>
   </div>
@@ -662,11 +764,21 @@ onMounted(async () => {
     display: flex;
     align-items: center;
     gap: 8px;
+    flex-wrap: wrap;
 
     .unit-group-title {
       font-weight: 600;
       color: var(--app-text-primary);
     }
+  }
+
+  .collapse-unit-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    padding-right: 8px;
+    gap: 8px;
   }
 
   .mobile-unit-list {

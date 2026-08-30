@@ -93,7 +93,7 @@ const goToLogin = () => {
       :model="registerForm"
       :rules="registerRules"
       label-position="top"
-      class="auth-form"
+      class="auth-form mobile-form"
     >
       <el-form-item label="邮箱" prop="email">
         <el-input v-model="registerForm.email" placeholder="请输入邮箱" size="large" />

@@ -3,11 +3,13 @@ import { ref, onMounted } from 'vue'
 import { issueService, type Issue } from '@/services/issueService'
 import { ElMessage } from 'element-plus'
 import { useBreakpoint } from '@/composables/useBreakpoint'
-import { usePaginationLayout, useResponsiveDialog } from '@/composables/useResponsiveDialog'
+import { usePaginationLayout } from '@/composables/useResponsiveDialog'
+import { useMobileForm } from '@/composables/useMobileForm'
 
 const { isMobile } = useBreakpoint()
 const { paginationLayout } = usePaginationLayout()
-const { dialogWidth } = useResponsiveDialog('50%')
+const { formLabelWidth, formLabelPosition, formClass, dialogWidth, dialogFullscreen, dialogClass } =
+  useMobileForm('100px', '50%')
 
 const issues = ref<Issue[]>([])
 const loading = ref(false)
@@ -282,11 +284,15 @@ onMounted(fetchIssues)
       v-model="dialogVisible"
       :title="isEditing ? '编辑问题' : '新建问题'"
       :width="dialogWidth"
+      :fullscreen="dialogFullscreen"
+      :class="dialogClass"
+      destroy-on-close
     >
       <el-form
         :model="currentIssue"
-        :label-width="isMobile ? undefined : '100px'"
-        :label-position="isMobile ? 'top' : 'right'"
+        :class="formClass"
+        :label-width="formLabelWidth"
+        :label-position="formLabelPosition"
       >
         <el-form-item label="标题" required>
           <el-input v-model="currentIssue.title" placeholder="请输入标题" />
