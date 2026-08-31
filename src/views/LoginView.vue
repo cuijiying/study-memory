@@ -3,8 +3,10 @@ import type { FormInstance, FormRules } from 'element-plus'
 import { User, Lock } from '@element-plus/icons-vue'
 import AuthShell from '@/components/AuthShell.vue'
 import { supabase } from '@/lib/supabase'
+import { resolveInternalRedirect } from '@/utils/redirect'
 
 const router = useRouter()
+const route = useRoute()
 const loading = ref(false)
 
 const loginForm = reactive({
@@ -45,7 +47,7 @@ const handleLogin = async (formEl: FormInstance | undefined) => {
 
       if (data.user) {
         ElMessage.success('登录成功')
-        router.push('/')
+        router.push(resolveInternalRedirect(route.query.redirect))
       }
     })
   } catch (error) {

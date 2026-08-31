@@ -34,9 +34,14 @@ export default defineConfig(({ mode }) => ({
       }
     }
   },
+  appType: 'spa',
   server: {
     port: 8888,
     open: true,
+    host: '0.0.0.0',
+  },
+  preview: {
+    port: 8888,
     host: '0.0.0.0',
   },
   build: {
